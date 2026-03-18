@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lobster AI V2
 
-## Getting Started
+基于 Next.js 16 的 AI Agent 平台，部署到阿里云 FC。
 
-First, run the development server:
+## 功能特性
+
+- 🤖 AI Agent 对话
+- 🔐 GitHub OAuth 登录
+- 💾 Supabase 数据存储
+- 🚀 阿里云 FC 部署（国内访问优化）
+
+## 技术栈
+
+- **前端**: Next.js 16 + React 19 + Tailwind CSS
+- **后端**: Next.js API Routes
+- **数据库**: Supabase (PostgreSQL)
+- **认证**: GitHub OAuth
+- **部署**: 阿里云函数计算 FC 3.0
+
+## 开发
 
 ```bash
+# 安装依赖
+npm install
+
+# 本地开发
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# 构建
+npm run build
+
+# 本地预览生产构建
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 阿里云 FC 部署
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 前置要求
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. 安装 [Serverless DevTools](https://www.serverless-devs.com/):
+   ```bash
+   npm install -g @serverless-devs/s
+   ```
 
-## Learn More
+2. 配置阿里云凭证:
+   ```bash
+   s config add
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+3. 确保 `.env.local` 包含必要的环境变量:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://lsgkavwhokakhiqibnvh.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 部署步骤
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# 方式一：使用部署脚本
+./deploy/fc-deploy.sh
 
-## Deploy on Vercel
+# 方式二：直接使用 s 命令
+npm run fc:deploy    # 部署
+npm run fc:logs      # 查看日志
+npm run fc:remove    # 删除部署
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 部署脚本说明
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `deploy/fc-deploy.sh`: 完整部署脚本
+  - 检查依赖
+  - 构建项目
+  - 准备部署包
+  - 部署到 FC
+
+- `s.yaml`: Serverless 配置文件
+  - 区域: cn-hangzhou
+  - 运行时: custom.debian10
+  - 内存: 512MB
+  - 超时: 60s
+
+- `fc-handler.js`: FC 入口函数
+  - 适配 Next.js standalone 模式
+  - 健康检查端点
+
+## 环境变量
+
+| 变量名 | 说明 | 必需 |
+|--------|------|------|
+| NEXT_PUBLIC_SUPABASE_URL | Supabase 项目 URL | ✅ |
+| NEXT_PUBLIC_SUPABASE_ANON_KEY | Supabase 匿名密钥 | ✅ |
+| GITHUB_CLIENT_ID | GitHub OAuth App ID | 生产环境 |
+| GITHUB_CLIENT_SECRET | GitHub OAuth Secret | 生产环境 |
+
+## 项目结构
+
+```
+lobster-ai-v2/
+├── deploy/
+│   └── fc-deploy.sh      # FC 部署脚本
+├── src/
+│   ├── app/              # Next.js App Router
+│   ├── components/       # React 组件
+│   └── lib/              # 工具函数
+├── public/               # 静态资源
+├── fc-handler.js         # FC 入口函数
+├── s.yaml                # Serverless 配置
+└── next.config.ts        # Next.js 配置
+```
+
+## 版本历史
+
+- **V1**: Lobster AI 原型 (已封存)
+- **V2**: 生产版本 - 阿里云 FC 部署
+
+## License
+
+MIT

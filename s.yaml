@@ -1,0 +1,100 @@
+# Lobster AI V2 - 阿里云 FC Serverless 配置
+# 文档: https://www.serverless-devs.com/
+
+edition: 3.0.0
+name: lobster-ai-v2
+access: default
+
+vars:
+  region: cn-hangzhou
+  serviceName: lobster-ai-v2
+  functionName: lobster-ai-web
+  role: acs:ram::${ALIYUN_ACCOUNT_ID}:role/aliyunfcdefaultrole
+
+resources:
+  lobster-ai:
+    component: fc3
+    props:
+      region: ${vars.region}
+      
+      # 函数配置
+      function:
+        name: ${vars.functionName}
+        description: Lobster AI V2 - Next.js Web Application
+        runtime: custom.debian10
+        handler: fc-handler.handler
+        timeout: 60
+        memorySize: 512
+        code: ./
+        
+        # 环境变量
+        environmentVariables:
+          NODE_ENV: production
+          NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+          
+        # 自定义运行时配置
+        customRuntimeConfig:
+          command:
+            - node
+            - fc-handler.js
+          port: 9000
+        
+        # 实例配置
+        instanceConcurrency: 10
+        instanceType: e1
+        
+      # 触发器配置 - HTTP 触发器
+      triggers:
+        - name: httpTrigger
+          type: http
+          config:
+            authType: anonymous
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - HEAD
+              - OPTIONS
+              - PATCH
+      
+      # 服务配置
+      service:
+        name: ${vars.serviceName}
+        description: Lobster AI V2 Service
+        internetAccess: true
+        
+      # 日志配置
+      logConfig:
+        project: lobster-ai-logs
+        logstore: function-logs
+        
+      # VPC 配置 (可选，用于访问 VPC 内资源)
+      # vpcConfig:
+      #   vpcId: ${VPC_ID}
+      #   subnetId: ${SUBNET_ID}
+      #   securityGroupId: ${SECURITY_GROUP_ID}
+
+# 部署配置
+deploy:
+  # 忽略文件
+  ignore:
+    - .git/
+    - .env.local
+    - node_modules/.cache/
+    - .next/cache/
+    - "*.log"
+    
+  # 部署前命令
+  preDeploy:
+    - npm install --production
+    - npm run build
+
+# 开发配置
+dev:
+  # 本地调试端口
+  port: 3000
+  
+  # 环境变量文件
+  envFile: .env.local
