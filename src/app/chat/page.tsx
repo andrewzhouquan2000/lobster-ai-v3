@@ -25,6 +25,13 @@ interface TaskControlState {
   isCancelled: boolean;
 }
 
+// Execution state for resumable tasks
+interface ExecutionState {
+  currentStep: number;        // Current agent response index (0-3)
+  userMessage: string;         // Original user message for context
+  startTime: number;          // When execution started
+}
+
 interface AgentProgress {
   id: number;
   name: string;
@@ -52,10 +59,10 @@ const defaultAgents: AgentProgress[] = [
 
 // 模拟的 Agent 响应
 const agentResponses = [
-  { agent: 'CEO', avatar: '🦞', content: '收到！我来分析需求并协调团队。让我先拆解一下任务...', delay: 500 },
-  { agent: 'Coder', avatar: '💻', content: '明白，我来评估技术方案。\n\n初步分析：\n1. 需要数据层\n2. 核心逻辑层\n3. 输出层\n\n开始编码...', delay: 1500 },
-  { agent: 'Designer', avatar: '🎨', content: '收到需求，我来设计用户界面和交互流程。', delay: 2500 },
-  { agent: 'DevOps', avatar: '⚙️', content: '好的，我来准备部署环境和 CI/CD 配置。', delay: 2000 },
+  { agent: 'CEO', avatar: '🦞', content: '收到！我来分析需求并协调团队。让我先拆解一下任务...', delay: 500, taskDesc: '分析需求文档...' },
+  { agent: 'Coder', avatar: '💻', content: '明白，我来评估技术方案。\n\n初步分析：\n1. 需要数据层\n2. 核心逻辑层\n3. 输出层\n\n开始编码...', delay: 1500, taskDesc: '编写代码框架...' },
+  { agent: 'Designer', avatar: '🎨', content: '收到需求，我来设计用户界面和交互流程。', delay: 2500, taskDesc: '设计 UI 原型...' },
+  { agent: 'DevOps', avatar: '⚙️', content: '好的，我来准备部署环境和 CI/CD 配置。', delay: 2000, taskDesc: '配置部署环境...' },
 ];
 
 function ChatContent() {
@@ -72,9 +79,13 @@ function ChatContent() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasOutputFiles, setHasOutputFiles] = useState(false);
   const [taskControl, setTaskControl] = useState<TaskControlState>({ isPaused: false, isCancelled: false });
+  const [executionState, setExecutionState] = useState<ExecutionState | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
+  
+  // Flag to check if task was paused mid-execution (not completed)
+  const wasPausedMidExecution = useRef(false);
 
   // Get current time in HH:mm format
   const getCurrentTime = useCallback(() => {
@@ -100,9 +111,78 @@ function ChatContent() {
     timeoutRefs.current = [];
   }, []);
 
+  // Execute agent responses from a specific step
+  const executeAgentResponses = useCallback((startStep: number, userMsg: string) => {
+    let messageDelay = 200; // Shorter delay when resuming
+    
+    agentResponses.slice(startStep).forEach((response, relativeIndex) => {
+      const actualIndex = startStep + relativeIndex;
+      const timeoutId = setTimeout(() => {
+        // Check if task was paused or cancelled
+        setTaskControl(current => {
+          if (current.isCancelled || current.isPaused) {
+            wasPausedMidExecution.current = true;
+            return current;
+          }
+          
+          const newMessage: Message = {
+            id: Date.now() + actualIndex,
+            agent: response.agent,
+            avatar: response.avatar,
+            content: response.content,
+            time: getCurrentTime(),
+          };
+          setMessages(prev => [...prev, newMessage]);
+          
+          // Update corresponding Agent status with specific task description
+          const agentId = actualIndex + 1;
+          const progress = 20 + actualIndex * 20;
+          updateAgentStatus(agentId, 'running', response.taskDesc || '执行任务中...', progress);
+          addLog(response.agent, response.content.split('\n')[0].substring(0, 30) + '...', 'running');
+          
+          // Update execution state
+          setExecutionState(prev => prev ? { ...prev, currentStep: actualIndex + 1 } : null);
+          
+          // Last response - mark complete
+          if (actualIndex === agentResponses.length - 1) {
+            const completeTimeout = setTimeout(() => {
+              setTaskControl(ctrl => {
+                if (ctrl.isCancelled || ctrl.isPaused) return ctrl;
+                
+                // Mark all agents as completed
+                setAgents(prev => prev.map(a => ({ ...a, status: 'completed' as AgentStatus, progress: 100, task: '任务完成' })));
+                addLog('CEO', '任务分配完成，团队开始工作', 'success');
+                
+                // Add completion message
+                const completionMessage: Message = {
+                  id: Date.now() + 100,
+                  agent: 'CEO',
+                  avatar: '🦞',
+                  content: '✅ 团队已就绪，开始执行任务！\n\n💡 你可以随时查看 **📁 文件** 页面了解产出文件进度。',
+                  time: getCurrentTime(),
+                };
+                setMessages(prev => [...prev, completionMessage]);
+                setHasOutputFiles(true);
+                setIsProcessing(false);
+                setExecutionState(null);
+                wasPausedMidExecution.current = false;
+                return ctrl;
+              });
+            }, 1000);
+            timeoutRefs.current.push(completeTimeout);
+          }
+          return current;
+        });
+      }, messageDelay);
+      timeoutRefs.current.push(timeoutId);
+      messageDelay += response.delay;
+    });
+  }, [getCurrentTime, updateAgentStatus, addLog]);
+
   // Handle pause task
   const handlePauseTask = useCallback(() => {
     clearAllTimeouts();
+    wasPausedMidExecution.current = true;
     setTaskControl(prev => ({ ...prev, isPaused: true }));
     setAgents(prev => prev.map(a => 
       a.status === 'running' ? { ...a, status: 'paused' as AgentStatus, task: '已暂停 - 等待恢复' } : a
@@ -112,19 +192,42 @@ function ChatContent() {
 
   // Handle resume task
   const handleResumeTask = useCallback(() => {
-    setTaskControl(prev => ({ ...prev, isPaused: false }));
-    setAgents(prev => prev.map(a => 
-      a.status === 'paused' ? { ...a, status: 'running' as AgentStatus, task: '继续执行中...' } : a
-    ));
-    addLog('System', '任务已恢复', 'info');
-    // Note: In a real implementation, you would resume the actual task execution here
-  }, [addLog]);
+    // Get current execution state
+    setExecutionState(currentState => {
+      if (!currentState) {
+        // No execution state, just reset UI
+        setTaskControl(prev => ({ ...prev, isPaused: false }));
+        setAgents(prev => prev.map(a => 
+          a.status === 'paused' ? { ...a, status: 'running' as AgentStatus, task: '继续执行中...' } : a
+        ));
+        addLog('System', '任务已恢复', 'info');
+        return null;
+      }
+      
+      // Reset pause flag first
+      setTaskControl(prev => ({ ...prev, isPaused: false }));
+      
+      // Update paused agents to running
+      setAgents(prev => prev.map(a => 
+        a.status === 'paused' ? { ...a, status: 'running' as AgentStatus, task: '继续执行中...' } : a
+      ));
+      
+      addLog('System', '任务已恢复，继续执行...', 'info');
+      
+      // Resume execution from current step
+      executeAgentResponses(currentState.currentStep, currentState.userMessage);
+      
+      return currentState;
+    });
+  }, [addLog, executeAgentResponses]);
 
   // Handle cancel task
   const handleCancelTask = useCallback(() => {
     clearAllTimeouts();
     setTaskControl({ isPaused: false, isCancelled: true });
     setIsProcessing(false);
+    setExecutionState(null);
+    wasPausedMidExecution.current = false;
     setAgents(prev => prev.map(a => ({ 
       ...a, 
       status: 'cancelled' as AgentStatus, 
@@ -140,6 +243,7 @@ function ChatContent() {
     
     // Reset task control state for new task
     setTaskControl({ isPaused: false, isCancelled: false });
+    wasPausedMidExecution.current = false;
     
     const userMessage: Message = {
       id: Date.now(),
@@ -150,72 +254,58 @@ function ChatContent() {
       isUser: true,
     };
     
+    const msgContent = input.trim();
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsProcessing(true);
+
+    // Initialize execution state
+    setExecutionState({
+      currentStep: 0,
+      userMessage: msgContent,
+      startTime: Date.now(),
+    });
 
     // 开始 Agent 协作流程
     addLog('System', '收到用户需求，开始分析...', 'info');
     updateAgentStatus(1, 'running', '分析用户需求...', 10);
 
-    // 模拟 Agent 响应序列
-    let messageDelay = 800;
-    agentResponses.forEach((response, index) => {
-      const timeoutId = setTimeout(() => {
-        // Check if task was cancelled
-        if (taskControl.isCancelled) return;
-        
-        const newMessage: Message = {
-          id: Date.now() + index,
-          agent: response.agent,
-          avatar: response.avatar,
-          content: response.content,
-          time: getCurrentTime(),
-        };
-        setMessages(prev => [...prev, newMessage]);
-        
-        // 更新对应 Agent 状态
-        const agentId = index + 1;
-        updateAgentStatus(agentId, 'running', '执行任务中...', 20 + index * 20);
-        addLog(response.agent, response.content.split('\n')[0].substring(0, 30) + '...', 'running');
-        
-        // 最后一个响应后完成
-        if (index === agentResponses.length - 1) {
-          const completeTimeout = setTimeout(() => {
-            // Check if task was cancelled
-            setTaskControl(current => {
-              if (current.isCancelled) return current;
-              
-              // 标记完成
-              setAgents(prev => prev.map(a => ({ ...a, status: 'completed' as AgentStatus, progress: 100, task: '任务完成' })));
-              addLog('CEO', '任务分配完成，团队开始工作', 'success');
-              
-              // 添加完成提示
-              const completionMessage: Message = {
-                id: Date.now() + 100,
-                agent: 'CEO',
-                avatar: '🦞',
-                content: '✅ 团队已就绪，开始执行任务！\n\n💡 你可以随时查看 **📁 文件** 页面了解产出文件进度。',
-                time: getCurrentTime(),
-              };
-              setMessages(prev => [...prev, completionMessage]);
-              setHasOutputFiles(true);
-              setIsProcessing(false);
-              return current;
-            });
-          }, 1000);
-          timeoutRefs.current.push(completeTimeout);
-        }
-      }, messageDelay);
-      timeoutRefs.current.push(timeoutId);
-      messageDelay += response.delay;
-    });
+    // Start execution from step 0
+    executeAgentResponses(0, msgContent);
   };
 
   // Calculate overall progress
   const overallProgress = Math.round(
     agents.reduce((sum, a) => sum + a.progress, 0) / agents.length
   );
+
+  // Get overall progress description
+  const getProgressDescription = useCallback(() => {
+    const runningAgent = agents.find(a => a.status === 'running');
+    const pausedAgent = agents.find(a => a.status === 'paused');
+    
+    if (taskControl.isPaused && pausedAgent) {
+      return `${pausedAgent.name}：已暂停`;
+    }
+    
+    if (runningAgent) {
+      return `${runningAgent.name}：${runningAgent.task}`;
+    }
+    
+    if (agents.every(a => a.status === 'completed')) {
+      return '全部任务已完成';
+    }
+    
+    if (agents.every(a => a.status === 'waiting')) {
+      return '等待任务开始...';
+    }
+    
+    if (taskControl.isCancelled) {
+      return '任务已取消';
+    }
+    
+    return '准备中...';
+  }, [agents, taskControl.isPaused, taskControl.isCancelled]);
 
   // Auto-scroll logs
   useEffect(() => {
@@ -295,7 +385,7 @@ function ChatContent() {
       {/* Progress Bar - Always visible */}
       <div className="bg-white px-4 py-2 border-b border-gray-100">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-gray-500">总体进度</span>
+          <span className="text-xs text-gray-500">{getProgressDescription()}</span>
           <span className="text-xs font-medium text-[#FF6B3D]">{overallProgress}%</span>
         </div>
         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
