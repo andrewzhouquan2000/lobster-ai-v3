@@ -17,7 +17,13 @@ interface Message {
 }
 
 // Agent status type
-type AgentStatus = 'waiting' | 'running' | 'completed';
+type AgentStatus = 'waiting' | 'running' | 'completed' | 'paused' | 'cancelled';
+
+// Task control state
+interface TaskControlState {
+  isPaused: boolean;
+  isCancelled: boolean;
+}
 
 interface AgentProgress {
   id: number;
@@ -65,8 +71,10 @@ function ChatContent() {
   const [showProgressPanel, setShowProgressPanel] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasOutputFiles, setHasOutputFiles] = useState(false);
+  const [taskControl, setTaskControl] = useState<TaskControlState>({ isPaused: false, isCancelled: false });
   const logContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
 
   // Get current time in HH:mm format
   const getCurrentTime = useCallback(() => {
@@ -86,9 +94,52 @@ function ChatContent() {
     ));
   }, []);
 
+  // Clear all pending timeouts
+  const clearAllTimeouts = useCallback(() => {
+    timeoutRefs.current.forEach(t => clearTimeout(t));
+    timeoutRefs.current = [];
+  }, []);
+
+  // Handle pause task
+  const handlePauseTask = useCallback(() => {
+    clearAllTimeouts();
+    setTaskControl(prev => ({ ...prev, isPaused: true }));
+    setAgents(prev => prev.map(a => 
+      a.status === 'running' ? { ...a, status: 'paused' as AgentStatus, task: '已暂停 - 等待恢复' } : a
+    ));
+    addLog('System', '任务已暂停', 'info');
+  }, [clearAllTimeouts, addLog]);
+
+  // Handle resume task
+  const handleResumeTask = useCallback(() => {
+    setTaskControl(prev => ({ ...prev, isPaused: false }));
+    setAgents(prev => prev.map(a => 
+      a.status === 'paused' ? { ...a, status: 'running' as AgentStatus, task: '继续执行中...' } : a
+    ));
+    addLog('System', '任务已恢复', 'info');
+    // Note: In a real implementation, you would resume the actual task execution here
+  }, [addLog]);
+
+  // Handle cancel task
+  const handleCancelTask = useCallback(() => {
+    clearAllTimeouts();
+    setTaskControl({ isPaused: false, isCancelled: true });
+    setIsProcessing(false);
+    setAgents(prev => prev.map(a => ({ 
+      ...a, 
+      status: 'cancelled' as AgentStatus, 
+      task: '已取消',
+      progress: a.status === 'completed' ? a.progress : a.progress 
+    })));
+    addLog('System', '任务已取消', 'info');
+  }, [clearAllTimeouts, addLog]);
+
   // Handle send message
   const handleSendMessage = () => {
     if (!input.trim() || isProcessing) return;
+    
+    // Reset task control state for new task
+    setTaskControl({ isPaused: false, isCancelled: false });
     
     const userMessage: Message = {
       id: Date.now(),
@@ -110,7 +161,10 @@ function ChatContent() {
     // 模拟 Agent 响应序列
     let messageDelay = 800;
     agentResponses.forEach((response, index) => {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
+        // Check if task was cancelled
+        if (taskControl.isCancelled) return;
+        
         const newMessage: Message = {
           id: Date.now() + index,
           agent: response.agent,
@@ -127,25 +181,33 @@ function ChatContent() {
         
         // 最后一个响应后完成
         if (index === agentResponses.length - 1) {
-          setTimeout(() => {
-            // 标记完成
-            setAgents(prev => prev.map(a => ({ ...a, status: 'completed' as AgentStatus, progress: 100, task: '任务完成' })));
-            addLog('CEO', '任务分配完成，团队开始工作', 'success');
-            
-            // 添加完成提示
-            const completionMessage: Message = {
-              id: Date.now() + 100,
-              agent: 'CEO',
-              avatar: '🦞',
-              content: '✅ 团队已就绪，开始执行任务！\n\n💡 你可以随时查看 **📁 文件** 页面了解产出文件进度。',
-              time: getCurrentTime(),
-            };
-            setMessages(prev => [...prev, completionMessage]);
-            setHasOutputFiles(true);
-            setIsProcessing(false);
+          const completeTimeout = setTimeout(() => {
+            // Check if task was cancelled
+            setTaskControl(current => {
+              if (current.isCancelled) return current;
+              
+              // 标记完成
+              setAgents(prev => prev.map(a => ({ ...a, status: 'completed' as AgentStatus, progress: 100, task: '任务完成' })));
+              addLog('CEO', '任务分配完成，团队开始工作', 'success');
+              
+              // 添加完成提示
+              const completionMessage: Message = {
+                id: Date.now() + 100,
+                agent: 'CEO',
+                avatar: '🦞',
+                content: '✅ 团队已就绪，开始执行任务！\n\n💡 你可以随时查看 **📁 文件** 页面了解产出文件进度。',
+                time: getCurrentTime(),
+              };
+              setMessages(prev => [...prev, completionMessage]);
+              setHasOutputFiles(true);
+              setIsProcessing(false);
+              return current;
+            });
           }, 1000);
+          timeoutRefs.current.push(completeTimeout);
         }
       }, messageDelay);
+      timeoutRefs.current.push(timeoutId);
       messageDelay += response.delay;
     });
   };
@@ -167,10 +229,19 @@ function ChatContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach(t => clearTimeout(t));
+    };
+  }, []);
+
   const getStatusColor = (status: AgentStatus) => {
     switch (status) {
       case 'running': return 'bg-blue-500 animate-pulse';
       case 'completed': return 'bg-green-500';
+      case 'paused': return 'bg-yellow-500';
+      case 'cancelled': return 'bg-red-500';
       case 'waiting': return 'bg-gray-300';
     }
   };
@@ -179,6 +250,8 @@ function ChatContent() {
     switch (status) {
       case 'running': return '执行中';
       case 'completed': return '已完成';
+      case 'paused': return '已暂停';
+      case 'cancelled': return '已取消';
       case 'waiting': return '等待中';
     }
   };
@@ -227,10 +300,44 @@ function ChatContent() {
         </div>
         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-[#FF6B3D] to-[#FF8F6B] rounded-full transition-all duration-500"
+            className={`h-full rounded-full transition-all duration-500 ${
+              taskControl.isCancelled ? 'bg-red-400' : 
+              taskControl.isPaused ? 'bg-yellow-400' : 
+              'bg-gradient-to-r from-[#FF6B3D] to-[#FF8F6B]'
+            }`}
             style={{ width: `${overallProgress}%` }}
           />
         </div>
+        
+        {/* Task Control Buttons */}
+        {isProcessing && (
+          <div className="flex items-center justify-end gap-2 mt-2">
+            {taskControl.isPaused ? (
+              <button
+                onClick={handleResumeTask}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-600 bg-green-50 rounded-full hover:bg-green-100 transition-colors"
+              >
+                <span>▶</span>
+                <span>继续</span>
+              </button>
+            ) : (
+              <button
+                onClick={handlePauseTask}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-yellow-600 bg-yellow-50 rounded-full hover:bg-yellow-100 transition-colors"
+              >
+                <span>⏸</span>
+                <span>暂停</span>
+              </button>
+            )}
+            <button
+              onClick={handleCancelTask}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-full hover:bg-red-100 transition-colors"
+            >
+              <span>✕</span>
+              <span>取消</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Agent Status Panel - Collapsible */}
@@ -245,6 +352,10 @@ function ChatContent() {
                     ? 'border-blue-200 bg-blue-50/50' 
                     : agent.status === 'completed'
                     ? 'border-green-200 bg-green-50/50'
+                    : agent.status === 'paused'
+                    ? 'border-yellow-200 bg-yellow-50/50'
+                    : agent.status === 'cancelled'
+                    ? 'border-red-200 bg-red-50/50'
                     : 'border-gray-100 bg-gray-50'
                 }`}
               >
@@ -261,11 +372,13 @@ function ChatContent() {
                   </div>
                 </div>
                 <p className="text-[10px] text-gray-500 truncate">{agent.task}</p>
-                {agent.status !== 'waiting' && (
+                {agent.status !== 'waiting' && agent.status !== 'cancelled' && (
                   <div className="h-1 bg-gray-200 rounded-full overflow-hidden mt-1.5">
                     <div 
                       className={`h-full rounded-full transition-all duration-500 ${
-                        agent.status === 'completed' ? 'bg-green-400' : 'bg-blue-400'
+                        agent.status === 'completed' ? 'bg-green-400' : 
+                        agent.status === 'paused' ? 'bg-yellow-400' : 
+                        'bg-blue-400'
                       }`}
                       style={{ width: `${agent.progress}%` }}
                     />
