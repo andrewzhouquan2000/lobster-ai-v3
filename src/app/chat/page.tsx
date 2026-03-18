@@ -693,25 +693,44 @@ function ChatContent() {
             </button>
           </div>
         )}
-        <div className="flex items-center gap-2">
-          <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors">
+        <div className="flex items-end gap-2">
+          <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors shrink-0">
             <span>+</span>
           </button>
-          <input 
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && input.trim()) {
-                handleSendMessage();
-              }
-            }}
-            placeholder="描述你的需求，AI 团队将协作完成..."
-            className="flex-1 h-9 text-sm bg-gray-50 border-0 rounded-full px-4 focus:outline-none focus:ring-2 focus:ring-[#FF6B3D]/20"
-          />
+          <div className="flex-1 relative">
+            <textarea 
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (input.trim()) {
+                    handleSendMessage();
+                  }
+                }
+              }}
+              onPaste={(e) => {
+                // Allow normal paste behavior for multi-line text
+                // The default behavior already handles this correctly
+              }}
+              placeholder="描述你的需求，AI 团队将协作完成... (Shift+Enter换行)"
+              rows={1}
+              className="w-full text-sm bg-gray-50 border-0 rounded-2xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF6B3D]/20 resize-none min-h-[36px] max-h-[120px] overflow-y-auto"
+              style={{ height: 'auto' }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = 'auto';
+                target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+              }}
+            />
+            {/* Character count */}
+            <span className={`absolute right-3 bottom-1 text-[10px] ${input.length > 500 ? 'text-red-400' : 'text-gray-300'}`}>
+              {input.length}
+            </span>
+          </div>
           <button 
             onClick={handleSendMessage}
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all shrink-0 ${
               input.trim() 
                 ? 'bg-gradient-to-r from-[#FF6B3D] to-[#FF8F6B] text-white shadow-md' 
                 : 'bg-gray-100 text-gray-400'

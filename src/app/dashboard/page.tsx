@@ -10,7 +10,7 @@ import BottomNav from '@/components/BottomNav';
 interface Project {
   id: number;
   name: string;
-  status: 'active' | 'done';
+  status: 'active' | 'done' | 'paused';
   progress: number;
   updated: string;
   createdAt: number;
@@ -19,8 +19,20 @@ interface Project {
 const defaultProjects: Project[] = [
   { id: 1, name: '股票分析工具', status: 'active', progress: 75, updated: '2小时前', createdAt: Date.now() - 7200000 },
   { id: 2, name: 'AI 新闻播客', status: 'done', progress: 100, updated: '今天 08:00', createdAt: Date.now() - 86400000 },
-  { id: 3, name: '客户线索挖掘', status: 'active', progress: 60, updated: '昨天', createdAt: Date.now() - 172800000 },
+  { id: 3, name: '客户线索挖掘', status: 'paused', progress: 30, updated: '昨天', createdAt: Date.now() - 172800000 },
 ];
+
+// Status badge configuration
+const getStatusConfig = (status: Project['status']) => {
+  switch (status) {
+    case 'active':
+      return { label: '进行中', color: 'bg-orange-100 text-orange-600 border-orange-200', dot: 'bg-orange-400' };
+    case 'done':
+      return { label: '已完成', color: 'bg-green-100 text-green-600 border-green-200', dot: 'bg-green-400' };
+    case 'paused':
+      return { label: '已暂停', color: 'bg-yellow-100 text-yellow-600 border-yellow-200', dot: 'bg-yellow-400' };
+  }
+};
 
 const agents = [
   { id: 1, name: 'Coder', avatar: '💻', status: 'online' },
@@ -36,6 +48,7 @@ export default function DashboardPage() {
   const [projectName, setProjectName] = useState('');
   const [editName, setEditName] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
+  const [editStatus, setEditStatus] = useState<Project['status']>('active');
 
   // Load projects from localStorage on mount
   useEffect(() => {
@@ -78,7 +91,7 @@ export default function DashboardPage() {
     const project = projects.find(p => p.id === projectId);
     if (project && editName.trim()) {
       const updatedProjects = projects.map(p => 
-        p.id === projectId ? { ...p, name: editName.trim(), updated: '刚刚' } : p
+        p.id === projectId ? { ...p, name: editName.trim(), status: editStatus, updated: '刚刚' } : p
       );
       saveProjects(updatedProjects);
     }
@@ -95,6 +108,7 @@ export default function DashboardPage() {
   const openEditDialog = (project: Project) => {
     setShowEditProject(project.id);
     setEditName(project.name);
+    setEditStatus(project.status);
   };
 
   return (
@@ -164,10 +178,21 @@ export default function DashboardPage() {
           {projects.map((project) => (
             <div key={project.id} className="relative group">
               <Link href={`/chat?name=${encodeURIComponent(project.name)}`} className="block">
-                <Card className="border border-gray-100 rounded-xl shadow-sm hover:border-[#FF6B3D]/30 transition-colors cursor-pointer">
+                <Card className={`border rounded-xl shadow-sm hover:border-[#FF6B3D]/30 transition-colors cursor-pointer ${
+                  project.status === 'active' ? 'border-[#FF6B3D]/30 bg-gradient-to-br from-orange-50/50 to-white' :
+                  project.status === 'done' ? 'border-green-200 bg-gradient-to-br from-green-50/30 to-white' :
+                  'border-yellow-200 bg-gradient-to-br from-yellow-50/30 to-white'
+                }`}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-[#1A1A2E] text-sm">{project.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-[#1A1A2E] text-sm">{project.name}</h3>
+                        {/* Status Badge */}
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${getStatusConfig(project.status).color}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${getStatusConfig(project.status).dot}`} />
+                          {getStatusConfig(project.status).label}
+                        </span>
+                      </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={(e) => { e.preventDefault(); openEditDialog(project); }}
@@ -185,7 +210,7 @@ export default function DashboardPage() {
                     </div>
                     <p className="text-xs text-gray-400 mt-0.5">{project.updated}</p>
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mt-2">
-                      <div className={`h-full rounded-full ${project.progress === 100 ? 'bg-green-400' : 'bg-gradient-to-r from-[#FF6B3D] to-[#FF8F6B]'}`} style={{ width: `${project.progress}%` }} />
+                      <div className={`h-full rounded-full ${project.progress === 100 ? 'bg-green-400' : project.status === 'paused' ? 'bg-yellow-400' : 'bg-gradient-to-r from-[#FF6B3D] to-[#FF8F6B]'}`} style={{ width: `${project.progress}%` }} />
                     </div>
                   </CardContent>
                 </Card>
@@ -285,10 +310,10 @@ export default function DashboardPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span className="text-xl">✏️</span>
-              重命名项目
+              编辑项目
             </DialogTitle>
             <DialogDescription>
-              修改项目名称
+              修改项目名称和状态
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
@@ -306,6 +331,28 @@ export default function DashboardPage() {
                   }
                 }}
               />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">项目状态</label>
+              <div className="flex gap-2">
+                {(['active', 'done', 'paused'] as const).map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setEditStatus(status)}
+                    className={`flex-1 h-9 text-xs font-medium rounded-lg border transition-all ${
+                      editStatus === status 
+                        ? status === 'active' 
+                          ? 'bg-orange-100 text-orange-600 border-orange-300' 
+                          : status === 'done' 
+                          ? 'bg-green-100 text-green-600 border-green-300' 
+                          : 'bg-yellow-100 text-yellow-600 border-yellow-300'
+                        : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {status === 'active' ? '🔄 进行中' : status === 'done' ? '✅ 已完成' : '⏸️ 已暂停'}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="flex gap-3">
               <button 
