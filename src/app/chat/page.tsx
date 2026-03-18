@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import BottomNav from '@/components/BottomNav';
@@ -42,7 +42,7 @@ const logs = [
   { time: '14:40', agent: 'CEO', action: '分析需求中...', type: 'info' },
 ];
 
-export default function ChatPage() {
+function ChatContent() {
   const searchParams = useSearchParams();
   const isNewProject = searchParams.get('new') === 'true';
   const projectName = searchParams.get('name') || '新项目';
@@ -278,5 +278,17 @@ export default function ChatPage() {
 
       <BottomNav />
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">加载中...</div>
+      </div>
+    }>
+      <ChatContent />
+    </Suspense>
   );
 }
