@@ -5,7 +5,17 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import BottomNav from '@/components/BottomNav';
 
-const messages = [
+// Message type
+interface Message {
+  id: number;
+  agent: string;
+  avatar: string;
+  content: string;
+  time: string;
+  isUser?: boolean;
+}
+
+const initialMessages: Message[] = [
   { id: 1, agent: 'CEO', avatar: '🦞', content: '收到，我来安排开发任务。Coder，请开始实现股票分析工具。', time: '14:30' },
   { id: 2, agent: 'Coder', avatar: '💻', content: '好的，我来分析需求并开始编写代码。\n\n预计需要以下模块：\n1. 数据获取层\n2. 分析引擎\n3. 报告生成', time: '14:32' },
   { id: 3, agent: 'User', avatar: '👤', content: '好的，开始吧', time: '14:35', isUser: true },
@@ -48,9 +58,34 @@ function ChatContent() {
   const projectName = searchParams.get('name') || '新项目';
   
   const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [agents, setAgents] = useState<AgentProgress[]>(initialAgents);
   const [showProgressPanel, setShowProgressPanel] = useState(true);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Get current time in HH:mm format
+  const getCurrentTime = () => {
+    const now = new Date();
+    return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  // Handle send message
+  const handleSendMessage = () => {
+    if (!input.trim()) return;
+    
+    const newMessage: Message = {
+      id: messages.length + 1,
+      agent: 'User',
+      avatar: '👤',
+      content: input.trim(),
+      time: getCurrentTime(),
+      isUser: true,
+    };
+    
+    setMessages(prev => [...prev, newMessage]);
+    setInput('');
+  };
 
   // Calculate overall progress
   const overallProgress = Math.round(
@@ -71,6 +106,11 @@ function ChatContent() {
       logContainerRef.current.scrollTop = 0;
     }
   }, []);
+
+  // Auto-scroll to bottom when new message is added
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const getStatusColor = (status: AgentStatus) => {
     switch (status) {
@@ -243,6 +283,7 @@ function ChatContent() {
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
@@ -257,14 +298,14 @@ function ChatContent() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && input.trim()) {
-                // Handle send
-                setInput('');
+                handleSendMessage();
               }
             }}
             placeholder="输入消息..."
             className="flex-1 h-9 text-sm bg-gray-50 border-0 rounded-full px-4 focus:outline-none focus:ring-2 focus:ring-[#FF6B3D]/20"
           />
           <button 
+            onClick={handleSendMessage}
             className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${
               input.trim() 
                 ? 'bg-gradient-to-r from-[#FF6B3D] to-[#FF8F6B] text-white shadow-md' 
