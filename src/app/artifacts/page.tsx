@@ -22,7 +22,7 @@ export default function ArtifactsPage() {
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-20">
       <div className="bg-white px-4 py-4 border-b border-gray-100">
-        <h1 className="text-lg font-semibold text-[#1A1A2E]">Artifacts</h1>
+        <h1 className="text-lg font-semibold text-[#1A1A2E]">📦 项目产出</h1>
         <p className="text-xs text-gray-400 mt-0.5">项目产物与文件</p>
       </div>
 

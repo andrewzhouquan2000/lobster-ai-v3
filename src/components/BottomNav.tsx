@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 
 const navItems = [
   { icon: '🏠', label: '首页', href: '/dashboard' },
-  { icon: '🏪', label: '市场', href: '/market' },
+  { icon: '📦', label: '产出', href: '/artifacts' },
   { icon: '🦞', label: '团队', href: '/agents' },
   { icon: '⚙️', label: '设置', href: '/tokens' },
 ];
