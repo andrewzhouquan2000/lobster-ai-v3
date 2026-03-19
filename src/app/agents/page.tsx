@@ -39,8 +39,9 @@ export default function AgentsPage() {
   const [teamList, setTeamList] = useState<TeamMember[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'team' | 'market'>('team');
+  const [viewMode, setViewMode] = useState<'team' | 'market'>('market');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+  const [animatingMemberId, setAnimatingMemberId] = useState<string | null>(null);
 
   // 从 localStorage 加载团队成员
   useEffect(() => {
@@ -103,6 +104,8 @@ export default function AgentsPage() {
     };
     
     setTeamList(prev => [...prev, newMember]);
+    setAnimatingMemberId(agent.id);
+    setTimeout(() => setAnimatingMemberId(null), 600);
     showToast(`已添加 ${agent.name} 到团队`, 'success');
   };
 
@@ -154,6 +157,26 @@ export default function AgentsPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-20">
+      {/* 动画样式 */}
+      <style jsx>{`
+        @keyframes bounceIn {
+          0% {
+            transform: scale(0.3);
+            opacity: 0;
+          }
+          50% {
+            transform: scale(1.05);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
+      
       {/* 顶部标题 */}
       <div className="bg-white px-4 py-4 border-b border-gray-100">
         <h1 className="text-lg font-semibold text-[#1A1A2E]">🦞 团队</h1>
@@ -203,49 +226,62 @@ export default function AgentsPage() {
 
           {/* Agent 列表 */}
           <div className="px-4 space-y-3">
-            {teamList.map((agent) => (
-              <Card key={agent.id} className="border border-gray-100 rounded-xl shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF6B3D] to-[#FF8F6B] flex items-center justify-center text-xl">
-                        {agent.avatar}
+            {teamList.map((agent) => {
+              const isNew = animatingMemberId === agent.id;
+              const projectCount = Math.floor(Math.random() * 5) + 1; // 模拟项目使用数
+              return (
+                <Card 
+                  key={agent.id} 
+                  className={`border border-gray-100 rounded-xl shadow-sm transition-all duration-500 ${
+                    isNew ? 'animate-bounce-in scale-105 border-[#FF6B3D]' : ''
+                  }`}
+                  style={isNew ? { animation: 'bounceIn 0.5s ease-out' } : {}}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF6B3D] to-[#FF8F6B] flex items-center justify-center text-lg">
+                          {agent.avatar}
+                        </div>
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                          agent.status === 'online' ? 'bg-green-400' : agent.status === 'busy' ? 'bg-orange-400' : 'bg-gray-300'
+                        }`} />
                       </div>
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                        agent.status === 'online' ? 'bg-green-400' : agent.status === 'busy' ? 'bg-orange-400' : 'bg-gray-300'
-                      }`} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium text-[#1A1A2E] text-sm">{agent.name}</h3>
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => removeTeamMember(agent.id)}
-                            className="text-gray-400 hover:text-red-500 transition-colors text-xs"
-                          >
-                            移除
-                          </button>
-                          <button 
-                            onClick={() => toggleTeamMember(agent.id)}
-                            className={`w-9 h-5 rounded-full transition-colors ${agent.active ? 'bg-[#FF6B3D]' : 'bg-gray-200'}`}
-                          >
-                            <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${agent.active ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                          </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium text-[#1A1A2E] text-sm truncate">{agent.name}</h3>
+                          <div className="flex items-center gap-1.5">
+                            <button 
+                              onClick={() => removeTeamMember(agent.id)}
+                              className="text-gray-400 hover:text-red-500 transition-colors text-xs"
+                            >
+                              移除
+                            </button>
+                            <button 
+                              onClick={() => toggleTeamMember(agent.id)}
+                              className={`w-8 h-4 rounded-full transition-colors ${agent.active ? 'bg-[#FF6B3D]' : 'bg-gray-200'}`}
+                            >
+                              <div className={`w-3.5 h-3.5 rounded-full bg-white shadow transition-transform ${agent.active ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-0.5 truncate">{agent.role}</p>
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span className="text-[10px] text-gray-500">📋 在 {projectCount} 个项目中使用</span>
+                        </div>
+                        <div className="flex gap-1 mt-1.5">
+                          {agent.skills.slice(0, 3).map((skill, i) => (
+                            <span key={i} className="text-[9px] px-1.5 py-0.5 bg-orange-50 text-[#FF6B3D] rounded">
+                              {skill}
+                            </span>
+                          ))}
                         </div>
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5">{agent.role}</p>
-                      <div className="flex gap-1 mt-2">
-                        {agent.skills.slice(0, 3).map((skill, i) => (
-                          <span key={i} className="text-[10px] px-1.5 py-0.5 bg-orange-50 text-[#FF6B3D] rounded">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
             
             {teamList.length === 0 && (
               <div className="text-center py-12 text-gray-400">
