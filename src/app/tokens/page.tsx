@@ -8,7 +8,6 @@ const tokens = [
   { id: 2, service: 'Aliyun OSS', icon: '☁️', status: 'active', created: '2026-03-08', lastUsed: '1小时前' },
   { id: 3, service: 'Brave Search', icon: '🦁', status: 'active', created: '2026-03-05', lastUsed: '2小时前' },
   { id: 4, service: 'Alpha Vantage', icon: '📈', status: 'expired', created: '2026-02-20', lastUsed: '3天前' },
-  { id: 5, service: 'OpenAI', icon: '🤖', status: 'active', created: '2026-03-01', lastUsed: '刚刚' },
 ];
 
 export default function TokensPage() {

@@ -1,21 +1,38 @@
-# Lobster AI V2
+# Lobster AI V3
 
-基于 Next.js 16 的 AI Agent 平台，部署到阿里云 FC。
+正式生产版本的 AI Agent 平台，支持多用户、数据持久化。
 
-## 功能特性
+## V3 核心改动
 
-- 🤖 AI Agent 对话
-- 🔐 GitHub OAuth 登录
-- 💾 Supabase 数据存储
-- 🚀 阿里云 FC 部署（国内访问优化）
+### 1. 数据持久化（Supabase）
+- ✅ 用户表 (users)
+- ✅ 项目表 (projects)
+- ✅ 聊天消息表 (messages)
+- ✅ 团队成员表 (team_members)
+- ✅ 行级安全策略 (RLS)
+- ✅ 自动创建用户记录触发器
+
+### 2. 用户系统
+- ✅ 邮箱注册/登录
+- ✅ 魔法链接登录
+- ✅ Supabase Auth 集成
+- 🔲 手机号登录（可选，待实现）
+
+### 3. Token 管理优化
+- ✅ 删除 OpenAI 选项（无 API 资源）
+- ✅ 保留 GitHub、Aliyun OSS、Brave Search、Alpha Vantage
+
+### 4. LLM 接入
+- 🔲 当前使用模拟响应
+- 🔲 后续接入 OpenClaw + 阿里云 Coding Plan
 
 ## 技术栈
 
 - **前端**: Next.js 16 + React 19 + Tailwind CSS
 - **后端**: Next.js API Routes
 - **数据库**: Supabase (PostgreSQL)
-- **认证**: GitHub OAuth
-- **部署**: 阿里云函数计算 FC 3.0
+- **认证**: Supabase Auth（邮箱 + 魔法链接）
+- **部署**: 阿里云函数计算 FC 3.0 / Vercel
 
 ## 开发
 
@@ -33,55 +50,11 @@ npm run build
 npm run start
 ```
 
-## 阿里云 FC 部署
+## 数据库设置
 
-### 前置要求
-
-1. 安装 [Serverless DevTools](https://www.serverless-devs.com/):
-   ```bash
-   npm install -g @serverless-devs/s
-   ```
-
-2. 配置阿里云凭证:
-   ```bash
-   s config add
-   ```
-
-3. 确保 `.env.local` 包含必要的环境变量:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://lsgkavwhokakhiqibnvh.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key
-   ```
-
-### 部署步骤
-
-```bash
-# 方式一：使用部署脚本
-./deploy/fc-deploy.sh
-
-# 方式二：直接使用 s 命令
-npm run fc:deploy    # 部署
-npm run fc:logs      # 查看日志
-npm run fc:remove    # 删除部署
-```
-
-### 部署脚本说明
-
-- `deploy/fc-deploy.sh`: 完整部署脚本
-  - 检查依赖
-  - 构建项目
-  - 准备部署包
-  - 部署到 FC
-
-- `s.yaml`: Serverless 配置文件
-  - 区域: cn-hangzhou
-  - 运行时: custom.debian10
-  - 内存: 512MB
-  - 超时: 60s
-
-- `fc-handler.js`: FC 入口函数
-  - 适配 Next.js standalone 模式
-  - 健康检查端点
+1. 在 Supabase Dashboard 中打开 SQL Editor
+2. 执行 `supabase/schema.sql` 中的 SQL 脚本
+3. 确保启用了 Row Level Security
 
 ## 环境变量
 
@@ -89,29 +62,41 @@ npm run fc:remove    # 删除部署
 |--------|------|------|
 | NEXT_PUBLIC_SUPABASE_URL | Supabase 项目 URL | ✅ |
 | NEXT_PUBLIC_SUPABASE_ANON_KEY | Supabase 匿名密钥 | ✅ |
-| GITHUB_CLIENT_ID | GitHub OAuth App ID | 生产环境 |
-| GITHUB_CLIENT_SECRET | GitHub OAuth Secret | 生产环境 |
 
 ## 项目结构
 
 ```
-lobster-ai-v2/
-├── deploy/
-│   └── fc-deploy.sh      # FC 部署脚本
+lobster-ai-v3/
 ├── src/
-│   ├── app/              # Next.js App Router
-│   ├── components/       # React 组件
-│   └── lib/              # 工具函数
-├── public/               # 静态资源
-├── fc-handler.js         # FC 入口函数
-├── s.yaml                # Serverless 配置
-└── next.config.ts        # Next.js 配置
+│   ├── app/
+│   │   ├── auth/           # 认证相关页面
+│   │   │   ├── page.tsx    # 登录/注册页面
+│   │   │   ├── callback/   # OAuth 回调
+│   │   │   └── logout/     # 登出 API
+│   │   ├── dashboard/      # 仪表盘（服务端渲染）
+│   │   ├── chat/           # AI 对话
+│   │   ├── tokens/         # Token 管理
+│   │   └── ...
+│   ├── components/
+│   │   ├── UserMenu.tsx    # 用户菜单组件
+│   │   └── ...
+│   └── lib/
+│       ├── supabase/       # Supabase 客户端
+│       │   ├── client.ts   # 浏览器端
+│       │   ├── server.ts   # 服务端
+│       │   └── middleware.ts
+│       └── types/
+│           └── database.ts # 数据库类型定义
+├── supabase/
+│   └── schema.sql          # 数据库表结构
+└── ...
 ```
 
 ## 版本历史
 
 - **V1**: Lobster AI 原型 (已封存)
-- **V2**: 生产版本 - 阿里云 FC 部署
+- **V2**: 生产版本基础 (已封存)
+- **V3**: 正式生产版本 - 多用户支持 + 数据持久化
 
 ## License
 
