@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import BottomNav from '@/components/BottomNav';
@@ -13,24 +13,123 @@ import {
   type Agent 
 } from '@/data/agents';
 
-// 当前团队成员
-const teamMembers = [
-  { id: 1, name: 'CEO Lobster', role: '任务拆解 · 资源调配', status: 'online', avatar: '🦞', skills: ['项目管理', '决策分析', '团队协调'], active: true },
-  { id: 2, name: 'Coder Lobster', role: '代码开发 · 功能实现', status: 'busy', avatar: '💻', skills: ['Python', 'TypeScript', 'React'], active: true },
-  { id: 3, name: 'Designer Lobster', role: 'UI/UX 设计', status: 'online', avatar: '🎨', skills: ['Figma', '设计系统', 'CSS'], active: true },
-  { id: 4, name: 'DevOps Lobster', role: '部署运维 · 监控告警', status: 'offline', avatar: '⚙️', skills: ['Docker', 'K8s', 'CI/CD'], active: true },
+// 团队成员类型
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  status: 'online' | 'busy' | 'offline';
+  avatar: string;
+  skills: string[];
+  active: boolean;
+  addedAt: number;
+}
+
+// 初始团队成员
+const initialTeamMembers: TeamMember[] = [
+  { id: 'ceo-lobster', name: 'CEO Lobster', role: '任务拆解 · 资源调配', status: 'online', avatar: '🦞', skills: ['项目管理', '决策分析', '团队协调'], active: true, addedAt: Date.now() },
+  { id: 'coder-lobster', name: 'Coder Lobster', role: '代码开发 · 功能实现', status: 'busy', avatar: '💻', skills: ['Python', 'TypeScript', 'React'], active: true, addedAt: Date.now() },
+  { id: 'designer-lobster', name: 'Designer Lobster', role: 'UI/UX 设计', status: 'online', avatar: '🎨', skills: ['Figma', '设计系统', 'CSS'], active: true, addedAt: Date.now() },
+  { id: 'devops-lobster', name: 'DevOps Lobster', role: '部署运维 · 监控告警', status: 'offline', avatar: '⚙️', skills: ['Docker', 'K8s', 'CI/CD'], active: true, addedAt: Date.now() },
 ];
 
+const STORAGE_KEY = 'lobster-team-members';
+
 export default function AgentsPage() {
-  const [teamList, setTeamList] = useState(teamMembers);
+  const [teamList, setTeamList] = useState<TeamMember[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'team' | 'market'>('team');
-  const [addedAgents, setAddedAgents] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 
-  // 切换团队成员状态
-  const toggleTeamMember = (id: number) => {
+  // 从 localStorage 加载团队成员
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setTeamList(parsed);
+      } catch {
+        setTeamList(initialTeamMembers);
+      }
+    } else {
+      setTeamList(initialTeamMembers);
+    }
+  }, []);
+
+  // 保存到 localStorage
+  useEffect(() => {
+    if (teamList.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(teamList));
+    }
+  }, [teamList]);
+
+  // 显示 Toast 提示
+  const showToast = (message: string, type: 'success' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 2000);
+  };
+
+  // 切换团队成员状态（启用/禁用）
+  const toggleTeamMember = (id: string) => {
     setTeamList(prev => prev.map(a => a.id === id ? { ...a, active: !a.active } : a));
+  };
+
+  // 移除团队成员
+  const removeTeamMember = (id: string) => {
+    setTeamList(prev => prev.filter(a => a.id !== id));
+    showToast('已从团队移除', 'info');
+  };
+
+  // 检查 Agent 是否已在团队中
+  const isInTeam = (agentId: string) => teamList.some(m => m.id === agentId);
+
+  // 添加 Agent 到团队
+  const handleAddAgent = (agent: Agent) => {
+    if (isInTeam(agent.id)) {
+      showToast('该 Agent 已在团队中', 'info');
+      return;
+    }
+    
+    const newMember: TeamMember = {
+      id: agent.id,
+      name: agent.name,
+      role: agent.description,
+      status: 'online',
+      avatar: agent.avatar,
+      skills: agent.skills,
+      active: true,
+      addedAt: Date.now(),
+    };
+    
+    setTeamList(prev => [...prev, newMember]);
+    showToast(`已添加 ${agent.name} 到团队`, 'success');
+  };
+
+  // 批量添加模板中的 Agent
+  const handleAddTemplate = (templateAgents: string[]) => {
+    const agentsToAdd = templateAgents
+      .map(id => marketAgents.find(a => a.id === id))
+      .filter((a): a is Agent => a !== undefined && !isInTeam(a.id));
+    
+    if (agentsToAdd.length === 0) {
+      showToast('模板中的 Agent 已全部在团队中', 'info');
+      return;
+    }
+    
+    const newMembers: TeamMember[] = agentsToAdd.map(agent => ({
+      id: agent.id,
+      name: agent.name,
+      role: agent.description,
+      status: 'online' as const,
+      avatar: agent.avatar,
+      skills: agent.skills,
+      active: true,
+      addedAt: Date.now(),
+    }));
+    
+    setTeamList(prev => [...prev, ...newMembers]);
+    showToast(`已添加 ${agentsToAdd.length} 个 Agent 到团队`, 'success');
   };
 
   // 过滤市场 Agent
@@ -44,28 +143,6 @@ export default function AgentsPage() {
     }
     return result;
   }, [searchQuery, selectedCategory]);
-
-  // 添加 Agent 到团队
-  const handleAddAgent = (agentId: string) => {
-    setAddedAgents(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(agentId)) {
-        newSet.delete(agentId);
-      } else {
-        newSet.add(agentId);
-      }
-      return newSet;
-    });
-  };
-
-  // 添加模板中的所有 Agent
-  const handleAddTemplate = (templateAgents: string[]) => {
-    setAddedAgents(prev => {
-      const newSet = new Set(prev);
-      templateAgents.forEach(id => newSet.add(id));
-      return newSet;
-    });
-  };
 
   // 获取选中分类的子分类
   const subCategories = useMemo(() => {
@@ -141,12 +218,20 @@ export default function AgentsPage() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <h3 className="font-medium text-[#1A1A2E] text-sm">{agent.name}</h3>
-                        <button 
-                          onClick={() => toggleTeamMember(agent.id)}
-                          className={`w-9 h-5 rounded-full transition-colors ${agent.active ? 'bg-[#FF6B3D]' : 'bg-gray-200'}`}
-                        >
-                          <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${agent.active ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => removeTeamMember(agent.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors text-xs"
+                          >
+                            移除
+                          </button>
+                          <button 
+                            onClick={() => toggleTeamMember(agent.id)}
+                            className={`w-9 h-5 rounded-full transition-colors ${agent.active ? 'bg-[#FF6B3D]' : 'bg-gray-200'}`}
+                          >
+                            <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${agent.active ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                          </button>
+                        </div>
                       </div>
                       <p className="text-xs text-gray-400 mt-0.5">{agent.role}</p>
                       <div className="flex gap-1 mt-2">
@@ -161,6 +246,14 @@ export default function AgentsPage() {
                 </CardContent>
               </Card>
             ))}
+            
+            {teamList.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <span className="text-3xl mb-2 block">🦞</span>
+                <p className="text-sm">团队暂无成员</p>
+                <p className="text-xs mt-1">前往「市场招聘」添加 Agent</p>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -259,8 +352,8 @@ export default function AgentsPage() {
                 <AgentCard
                   key={agent.id}
                   agent={agent}
-                  isAdded={addedAgents.has(agent.id)}
-                  onAdd={() => handleAddAgent(agent.id)}
+                  isInTeam={isInTeam(agent.id)}
+                  onAdd={() => handleAddAgent(agent)}
                 />
               ))}
             </div>
@@ -272,39 +365,21 @@ export default function AgentsPage() {
               </div>
             )}
           </div>
-
-          {/* 底部操作栏 */}
-          {addedAgents.size > 0 && (
-            <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 z-50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex -space-x-2">
-                    {Array.from(addedAgents).slice(0, 4).map((id) => {
-                      const agent = marketAgents.find(a => a.id === id);
-                      return agent ? (
-                        <div
-                          key={id}
-                          className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FF6B3D] to-[#FF8F6B] flex items-center justify-center text-sm border-2 border-white"
-                        >
-                          {agent.avatar}
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                  {addedAgents.size > 4 && (
-                    <span className="text-xs text-gray-400">+{addedAgents.size - 4}</span>
-                  )}
-                </div>
-                <button className="px-4 py-2 bg-[#FF6B3D] text-white text-sm font-medium rounded-lg hover:bg-[#E55A2B] transition-colors">
-                  添加到团队 ({addedAgents.size})
-                </button>
-              </div>
-            </div>
-          )}
         </>
       )}
 
       <BottomNav />
+
+      {/* Toast 提示 */}
+      {toast && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-all ${
+          toast.type === 'success' 
+            ? 'bg-green-500 text-white' 
+            : 'bg-gray-800 text-white'
+        }`}>
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }
@@ -312,11 +387,11 @@ export default function AgentsPage() {
 // Agent 卡片组件
 function AgentCard({ 
   agent, 
-  isAdded, 
+  isInTeam, 
   onAdd 
 }: { 
   agent: Agent; 
-  isAdded: boolean; 
+  isInTeam: boolean; 
   onAdd: () => void;
 }) {
   return (
@@ -337,13 +412,14 @@ function AgentCard({
             <h3 className="font-medium text-[#1A1A2E] text-xs truncate">{agent.name}</h3>
             <button
               onClick={onAdd}
+              disabled={isInTeam}
               className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-                isAdded 
-                  ? 'bg-green-500 text-white' 
+                isInTeam 
+                  ? 'bg-green-500 text-white cursor-default' 
                   : 'bg-gray-100 text-gray-400 hover:bg-[#FF6B3D] hover:text-white'
               }`}
             >
-              {isAdded ? '✓' : '+'}
+              {isInTeam ? '✓' : '+'}
             </button>
           </div>
           <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{agent.description}</p>
