@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 interface UserMenuProps {
@@ -16,13 +15,18 @@ export default function UserMenu({ user }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   const handleLogout = async () => {
     setLoading(true);
-    await supabase.auth.signOut();
-    router.push('/auth');
-    router.refresh();
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/auth');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const displayName = user.display_name || user.email.split('@')[0];

@@ -13,6 +13,7 @@ interface Project {
   name: string;
   description: string | null;
   status: 'active' | 'archived' | 'deleted';
+  openclaw_session_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,15 +45,38 @@ const getTimeOfDay = () => {
 
 export default function DashboardClient({ user, initialProjects }: DashboardClientProps) {
   const router = useRouter();
-  const [projects] = useState<Project[]>(initialProjects);
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [showNewProject, setShowNewProject] = useState(false);
   const [projectName, setProjectName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
-  const handleCreateProject = () => {
-    if (projectName.trim()) {
-      router.push(`/chat?new=true&name=${encodeURIComponent(projectName.trim())}`);
-    } else {
-      router.push('/chat?new=true');
+  const handleCreateProject = async () => {
+    const name = projectName.trim() || '新项目';
+    setIsCreating(true);
+
+    try {
+      // 创建项目
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.project) {
+        // 跳转到聊天页面
+        router.push(`/chat?project=${data.project.id}&name=${encodeURIComponent(name)}&new=true`);
+      } else {
+        // 创建失败，仍然跳转（使用临时项目）
+        router.push(`/chat?new=true&name=${encodeURIComponent(name)}`);
+      }
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      // 出错时仍然跳转
+      router.push(`/chat?new=true&name=${encodeURIComponent(name)}`);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -118,7 +142,7 @@ export default function DashboardClient({ user, initialProjects }: DashboardClie
         </div>
         <div className="space-y-3">
           {projects.map((project) => (
-            <Link key={project.id} href={`/chat?project=${project.id}`}>
+            <Link key={project.id} href={`/chat?project=${project.id}&name=${encodeURIComponent(project.name)}`}>
               <Card className="border border-[#FF6B3D]/30 bg-gradient-to-br from-orange-50/50 to-white rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">

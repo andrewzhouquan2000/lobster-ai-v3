@@ -1,8 +1,29 @@
-import { updateSession } from '@/lib/supabase/middleware'
-import { type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request)
+  // Protected routes
+  const protectedPaths = ['/dashboard', '/chat', '/agents', '/projects', '/tokens', '/deploy', '/logs', '/threads', '/artifacts', '/skills', '/market']
+  const isProtectedPath = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
+
+  // Check session cookie
+  const sessionToken = request.cookies.get('lobster_session')?.value
+  const isAuthenticated = !!sessionToken
+
+  // Redirect unauthenticated users to auth page
+  if (isProtectedPath && !isAuthenticated) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth'
+    return NextResponse.redirect(url)
+  }
+
+  // Redirect authenticated users away from auth page
+  if (isAuthenticated && request.nextUrl.pathname.startsWith('/auth')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {

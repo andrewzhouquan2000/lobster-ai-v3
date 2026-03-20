@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import BottomNav from '@/components/BottomNav';
 import { 
   agents, 
@@ -10,16 +9,26 @@ import {
   templates, 
   searchAgents, 
   getAgentsByCategory,
-  type Agent 
+  getAgentById,
+  type Agent,
+  type PastProject,
 } from '@/data/agents';
+import { skills as predefinedSkills, type Skill } from '@/data/skills';
 
 type ViewMode = 'grid' | 'templates';
+
+// OpenClaw Skills 映射
+const skillMap = new Map(predefinedSkills.map(s => [s.id, s]));
 
 export default function MarketPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [addedAgents, setAddedAgents] = useState<Set<string>>(new Set());
+  
+  // Agent 详情 Modal
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailAgentId, setDetailAgentId] = useState<string | null>(null);
 
   // 过滤 Agent
   const filteredAgents = useMemo(() => {
@@ -62,6 +71,15 @@ export default function MarketPage() {
     const subs = [...new Set(categoryAgents.map(a => a.subCategory))];
     return subs;
   }, [selectedCategory]);
+
+  // 获取详情 Agent
+  const detailAgent = detailAgentId ? getAgentById(detailAgentId) : null;
+
+  // 打开详情 Modal
+  const openDetailModal = (agentId: string) => {
+    setDetailAgentId(agentId);
+    setShowDetailModal(true);
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] pb-20">
@@ -176,7 +194,8 @@ export default function MarketPage() {
                   return (
                     <div
                       key={agentId}
-                      className="shrink-0 flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-lg"
+                      className="shrink-0 flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+                      onClick={() => openDetailModal(agentId)}
                     >
                       <span className="text-base">{agent.avatar}</span>
                       <span className="text-xs text-gray-600">{agent.name}</span>
@@ -222,6 +241,7 @@ export default function MarketPage() {
                 agent={agent}
                 isAdded={addedAgents.has(agent.id)}
                 onAdd={() => handleAddAgent(agent.id)}
+                onDetail={() => openDetailModal(agent.id)}
               />
             ))}
           </div>
@@ -265,6 +285,156 @@ export default function MarketPage() {
       )}
 
       <BottomNav />
+
+      {/* ==================== Agent 详情 Modal ==================== */}
+      {showDetailModal && detailAgent && (
+        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
+          <div className="bg-white rounded-t-2xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-slide-up">
+            {/* 头部 */}
+            <div className="relative bg-gradient-to-br from-[#FF6B3D] to-[#FF8F6B] p-6 text-white">
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
+              >
+                ✕
+              </button>
+              
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-3xl">
+                  {detailAgent.avatar}
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold">{detailAgent.name}</h2>
+                  <p className="text-white/80 text-sm mt-1">{detailAgent.subCategory}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                      ⭐ {detailAgent.rating}
+                    </span>
+                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                      {(detailAgent.uses / 1000).toFixed(1)}k 使用
+                    </span>
+                    {detailAgent.trending && (
+                      <span className="text-xs bg-white/30 px-2 py-0.5 rounded-full">🔥 热门</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 内容区 */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {/* 简介 */}
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-[#1A1A2E] mb-2">简介</h3>
+                <p className="text-sm text-gray-600">{detailAgent.description}</p>
+              </div>
+
+              {/* 性格特征 */}
+              {detailAgent.personality && detailAgent.personality.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-[#1A1A2E] mb-2">💡 性格特征</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {detailAgent.personality.map((p, i) => (
+                      <span key={i} className="text-xs px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-full">
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 能力描述 */}
+              {detailAgent.capabilities && detailAgent.capabilities.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-[#1A1A2E] mb-2">⚡ 核心能力</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {detailAgent.capabilities.map((cap, i) => (
+                      <span key={i} className="text-xs px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full">
+                        {cap}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 技能标签 */}
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-[#1A1A2E] mb-2">🏷️ 技能标签</h3>
+                <div className="flex flex-wrap gap-2">
+                  {detailAgent.skills.map((skill, i) => (
+                    <span key={i} className="text-xs px-3 py-1.5 bg-orange-50 text-[#FF6B3D] rounded-full">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* OpenClaw Skills */}
+              {detailAgent.openclawSkills && detailAgent.openclawSkills.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-[#1A1A2E] mb-2">🔧 OpenClaw Skills</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {detailAgent.openclawSkills.map((skillId, i) => {
+                      const skill = skillMap.get(skillId);
+                      return (
+                        <span key={i} className="text-xs px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full">
+                          {skill?.icon || '📦'} {skill?.displayName || skillId}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 过往项目 */}
+              {detailAgent.pastProjects && detailAgent.pastProjects.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-[#1A1A2E] mb-2">📁 过往项目</h3>
+                  <div className="space-y-2">
+                    {detailAgent.pastProjects.map((project, i) => (
+                      <div key={i} className="bg-gray-50 rounded-xl p-3">
+                        <h4 className="text-sm font-medium text-[#1A1A2E]">{project.name}</h4>
+                        <p className="text-xs text-gray-500 mt-1">{project.description}</p>
+                        {project.result && (
+                          <p className="text-xs text-green-600 mt-1">✓ {project.result}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 底部操作 */}
+            <div className="p-4 border-t border-gray-100">
+              <button
+                onClick={() => {
+                  handleAddAgent(detailAgent.id);
+                  setShowDetailModal(false);
+                }}
+                className={`w-full py-3 rounded-xl text-sm font-medium transition-colors ${
+                  addedAgents.has(detailAgent.id)
+                    ? 'bg-gray-100 text-gray-400'
+                    : 'bg-[#FF6B3D] text-white hover:bg-[#E55A2B]'
+                }`}
+              >
+                {addedAgents.has(detailAgent.id) ? '✓ 已选择' : '添加到团队'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 动画样式 */}
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        .animate-slide-up {
+          animation: slideUp 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
@@ -273,14 +443,19 @@ export default function MarketPage() {
 function AgentCard({ 
   agent, 
   isAdded, 
-  onAdd 
+  onAdd,
+  onDetail,
 }: { 
   agent: Agent; 
   isAdded: boolean; 
   onAdd: () => void;
+  onDetail: () => void;
 }) {
   return (
-    <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+    <div 
+      className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      onClick={onDetail}
+    >
       <div className="flex items-start gap-2">
         <div className="relative shrink-0">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6B3D]/10 to-[#FF8F6B]/10 flex items-center justify-center text-lg">
@@ -296,7 +471,7 @@ function AgentCard({
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-[#1A1A2E] text-xs truncate">{agent.name}</h3>
             <button
-              onClick={onAdd}
+              onClick={(e) => { e.stopPropagation(); onAdd(); }}
               className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
                 isAdded 
                   ? 'bg-green-500 text-white' 
@@ -317,16 +492,16 @@ function AgentCard({
           </div>
         </div>
       </div>
-      <div className="flex gap-1 mt-2 flex-wrap">
-        {agent.skills.slice(0, 3).map((skill, i) => (
-          <span
-            key={i}
-            className="text-[9px] px-1.5 py-0.5 bg-orange-50 text-[#FF6B3D] rounded"
-          >
-            {skill}
-          </span>
-        ))}
-      </div>
+      {/* 能力标签 */}
+      {agent.capabilities && agent.capabilities.length > 0 && (
+        <div className="flex gap-1 mt-2 flex-wrap">
+          {agent.capabilities.slice(0, 3).map((cap, i) => (
+            <span key={i} className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded">
+              {cap}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
