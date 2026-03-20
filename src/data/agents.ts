@@ -1100,6 +1100,78 @@ export const agents: Agent[] = [
     capabilities: ['社群搭建', '用户活跃', '内容分发', '转化变现'],
     pastProjects: generateProjects('社群运营', '社媒运营'),
   },
+  // ★ 明星员工 - 小红书运营
+  { 
+    id: 'agent-lin-xiaohongshu', 
+    name: '林小红', 
+    avatar: '📱', 
+    category: 'marketing', 
+    subCategory: '社媒运营', 
+    description: '小红书资深运营，精通账号管理、内容策划、数据分析。帮助品牌在小红书获得增长。', 
+    skills: ['小红书运营', '内容策划', '数据分析', '粉丝增长', '爆款文案'], 
+    rating: 4.9, 
+    uses: 880, 
+    trending: true,
+    openclawSkills: [],
+    personality: ['创意', '数据敏感', '用户导向', '执行力强'],
+    capabilities: [
+      '小红书账号管理',
+      '内容策划与发布',
+      '数据监控与分析',
+      '粉丝互动与增长',
+      '爆款内容创作'
+    ],
+    pastProjects: [
+      {
+        name: '美妆品牌小红书运营',
+        description: '从0到1搭建品牌小红书账号',
+        result: '3个月粉丝破10万'
+      },
+      {
+        name: '电商账号增长项目',
+        description: '优化内容策略提升账号权重',
+        result: '笔记曝光量提升300%'
+      },
+      {
+        name: '爆款笔记策划',
+        description: '策划并执行爆款内容策略',
+        result: '单篇笔记获赞2万+'
+      }
+    ],
+  },
+  // ★ 明星员工 - 小红书助手
+  { 
+    id: 'agent-chen-xhs-assist', 
+    name: '陈助手', 
+    avatar: '✍️', 
+    category: 'marketing', 
+    subCategory: '内容运营', 
+    description: '小红书内容助手，擅长文案撰写、图片优化、话题挖掘。配合运营完成日常内容产出。', 
+    skills: ['文案撰写', '图片处理', '话题挖掘', '数据整理', '评论互动'], 
+    rating: 4.7, 
+    uses: 720,
+    openclawSkills: [],
+    personality: ['细心', '创意', '学习能力强', '执行力强'],
+    capabilities: [
+      '小红书文案撰写',
+      '封面图优化建议',
+      '热门话题挖掘',
+      '评论区互动',
+      '竞品内容整理'
+    ],
+    pastProjects: [
+      {
+        name: '日更内容支持',
+        description: '协助运营完成日更任务',
+        result: '日均产出3篇高质量笔记'
+      },
+      {
+        name: '话题卡点挖掘',
+        description: '追踪热门话题提供选题建议',
+        result: '选题采纳率80%'
+      }
+    ],
+  },
 
   // ========== 分析类 (15个) ==========
   // 数据分析
@@ -1212,6 +1284,45 @@ export const agents: Agent[] = [
     personality: ['数据驱动', '产品思维', '迭代导向', '用户导向'],
     capabilities: ['产品分析', '迭代优化', '数据驱动', 'AB测试'],
     pastProjects: generateProjects('产品分析师', '市场分析'),
+  },
+  // ★ 明星员工 - 市场分析
+  { 
+    id: 'agent-li-researcher', 
+    name: '李研', 
+    avatar: '🔍', 
+    category: 'analysis', 
+    subCategory: '市场分析', 
+    description: '资深研究员，擅长市场调研、竞品分析、数据挖掘。精通各类搜索工具和数据源。', 
+    skills: ['网络搜索', '数据分析', '报告撰写', '竞品分析', 'OnePassword'], 
+    rating: 4.9, 
+    uses: 1100, 
+    trending: true,
+    openclawSkills: ['1password'],
+    personality: ['好奇心强', '严谨', '数据敏感', '善于发现'],
+    capabilities: [
+      '市场调研与趋势分析',
+      '竞品深度分析',
+      '数据挖掘与整理',
+      '研究报告撰写',
+      '账号密码自动管理'
+    ],
+    pastProjects: [
+      {
+        name: 'AI 行业深度调研',
+        description: '完成 2026 年 AI 行业投资趋势分析报告',
+        result: '发现 3 个高增长细分赛道'
+      },
+      {
+        name: '竞品分析项目',
+        description: '为某电商平台分析 10+ 竞品',
+        result: '输出 50 页深度分析报告'
+      },
+      {
+        name: '市场机会挖掘',
+        description: '协助创业者验证商业机会',
+        result: '发现 2 个未被满足的市场需求'
+      }
+    ],
   },
 
   // 更多分析
@@ -1448,6 +1559,45 @@ export const agents: Agent[] = [
     personality: ['用户导向', '转化思维', '数据分析', '流程设计'],
     capabilities: ['新用户引导', '激活策略', '留存优化', '数据分析'],
     pastProjects: generateProjects('新用户运营', '产品运营'),
+  },
+  // ★ 明星员工 - 产品运营
+  { 
+    id: 'agent-wang-pm', 
+    name: '王管理', 
+    avatar: '📋', 
+    category: 'operations', 
+    subCategory: '产品运营', 
+    description: '资深项目经理，擅长需求理解、任务分解、团队协调。确保项目按时高质量交付。', 
+    skills: ['需求分析', '项目规划', '团队协调', '风险控制', '复盘总结'], 
+    rating: 4.8, 
+    uses: 950, 
+    trending: true,
+    openclawSkills: [],
+    personality: ['责任心强', '沟通能力强', '注重细节', '结果导向'],
+    capabilities: [
+      '需求理解与分解',
+      '项目进度管理',
+      '团队协调与调度',
+      '风险识别与控制',
+      '每日复盘与改进'
+    ],
+    pastProjects: [
+      {
+        name: '电商平台重构项目',
+        description: '统筹 5 人团队完成平台架构升级',
+        result: '按时交付，质量达标'
+      },
+      {
+        name: 'AI 产品 MVP 开发',
+        description: '协调开发、设计完成 MVP',
+        result: '2 周内完成上线'
+      },
+      {
+        name: '跨部门协作项目',
+        description: '协调产品、技术、运营团队',
+        result: '建立高效协作流程'
+      }
+    ],
   },
 
   // 用户运营
