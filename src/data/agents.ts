@@ -470,6 +470,45 @@ export const agents: Agent[] = [
     capabilities: ['T3全栈开发', '类型安全', 'API设计', '快速迭代'],
     pastProjects: generateProjects('T3 Stack工程师', '全栈开发'),
   },
+  // ★ 明星员工 - 全栈开发
+  { 
+    id: 'agent-alex-chen', 
+    name: 'Alex Chen', 
+    avatar: '👨‍💻', 
+    category: 'dev', 
+    subCategory: '全栈开发', 
+    description: '10年全栈开发经验，擅长大型项目架构和快速交付。精通 TypeScript、React、Next.js、Node.js。代码风格严谨，注重可维护性。', 
+    skills: ['TypeScript', 'React', 'Next.js', 'Node.js', '小程序开发', 'GitHub'], 
+    rating: 4.9, 
+    uses: 1250, 
+    trending: true,
+    openclawSkills: ['coding-agent', 'github'],
+    personality: ['严谨', '追求代码质量', '快速交付', '善于沟通', '注重文档'],
+    capabilities: [
+      '承接大型项目架构设计',
+      '代码排错与重构',
+      '小程序/页面级开发',
+      '性能优化',
+      '技术方案评审'
+    ],
+    pastProjects: [
+      {
+        name: '电商平台全栈开发',
+        description: '独立完成日均10万单的电商平台前后端开发',
+        result: '性能提升60%，获得用户好评'
+      },
+      {
+        name: '企业微信小程序',
+        description: '为某连锁餐饮品牌开发点餐小程序',
+        result: '上线首月用户破10万，转化率提升25%'
+      },
+      {
+        name: 'AI Agent 平台开发',
+        description: '参与 Lobster AI V3 核心架构设计',
+        result: '完成 117 个 Agent 的系统集成'
+      }
+    ],
+  },
 
   // 移动端开发
   { 
@@ -585,6 +624,39 @@ export const agents: Agent[] = [
     personality: ['稳定性至上', '数据驱动', '故障分析', '预防思维'],
     capabilities: ['可靠性工程', '监控体系', '故障处理', 'SLA保障'],
     pastProjects: generateProjects('SRE工程师', 'DevOps'),
+  },
+  // ★ 明星员工 - DevOps
+  { 
+    id: 'agent-zhang-devops', 
+    name: '张运维', 
+    avatar: '🔧', 
+    category: 'dev', 
+    subCategory: 'DevOps', 
+    description: '资深 DevOps 工程师，精通阿里云、Vercel、Docker 部署。确保服务稳定运行。', 
+    skills: ['阿里云', 'Docker', 'CI/CD', 'Nginx', '监控告警'], 
+    rating: 4.8, 
+    uses: 890, 
+    openclawSkills: ['healthcheck'],
+    personality: ['系统思维', '注重稳定', '自动化导向', '故障排查能力强'],
+    capabilities: [
+      '阿里云服务器部署',
+      'CI/CD 流程搭建',
+      '监控告警配置',
+      '性能优化',
+      '安全加固'
+    ],
+    pastProjects: [
+      {
+        name: '电商平台部署优化',
+        description: '部署到阿里云并配置 CI/CD',
+        result: '部署时间从30分钟缩短到5分钟'
+      },
+      {
+        name: 'Lobster AI V4 公网部署',
+        description: '首次将 Lobster AI 部署到公网服务器',
+        result: '实现 24/7 稳定运行'
+      }
+    ],
   },
 
   // 数据库
