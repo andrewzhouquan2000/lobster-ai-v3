@@ -27,6 +27,7 @@ export default function AuthPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        credentials: 'include', // 确保浏览器保存 Cookie
       });
 
       const data = await res.json();
