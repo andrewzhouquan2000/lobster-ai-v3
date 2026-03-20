@@ -438,6 +438,40 @@ export const agents: Agent[] = [
     capabilities: ['Java后端', '微服务架构', '系统设计', '性能调优'],
     pastProjects: generateProjects('Java架构师', '后端开发'),
   },
+  // ★ 明星员工 - 后端开发
+  { 
+    id: 'agent-zhao-backend', 
+    name: '赵后端', 
+    avatar: '⚙️', 
+    category: 'dev', 
+    subCategory: '后端开发', 
+    description: '资深后端工程师，精通 Node.js、Python、Go。擅长 API 设计、数据库优化、微服务架构。', 
+    skills: ['Node.js', 'Python', 'Go', 'API设计', '数据库优化'], 
+    rating: 4.9, 
+    uses: 980, 
+    trending: true,
+    openclawSkills: ['github:read', 'github:write'],
+    personality: ['逻辑性强', '注重性能', '系统思维', '代码整洁'],
+    capabilities: [
+      '后端架构设计',
+      'API 接口开发',
+      '数据库设计与优化',
+      '微服务架构',
+      '性能调优'
+    ],
+    pastProjects: [
+      {
+        name: '高并发电商系统',
+        description: '设计并实现日均百万订单的后端架构',
+        result: '系统稳定性 99.99%'
+      },
+      {
+        name: '微服务改造项目',
+        description: '将单体应用改造为微服务架构',
+        result: '部署效率提升 80%'
+      }
+    ],
+  },
 
   // 全栈开发
   { 
@@ -822,6 +856,39 @@ export const agents: Agent[] = [
     personality: ['故事感', '节奏把控', '特效敏感', '剪辑思维'],
     capabilities: ['视频剪辑', '特效制作', '调色', '后期处理'],
     pastProjects: generateProjects('视频后期', '动效设计'),
+  },
+  // ★ 明星员工 - 视频设计
+  { 
+    id: 'agent-zhou-video', 
+    name: '周剪辑', 
+    avatar: '🎬', 
+    category: 'design', 
+    subCategory: '视频设计', 
+    description: '资深视频剪辑师，精通短视频、宣传片、教程视频。帮助品牌用视频讲故事。', 
+    skills: ['视频剪辑', 'Premiere', 'After Effects', '短视频', '配音'], 
+    rating: 4.7, 
+    uses: 780,
+    openclawSkills: [],
+    personality: ['创意丰富', '节奏感强', '注重细节', '审美敏锐'],
+    capabilities: [
+      '短视频剪辑',
+      '宣传片制作',
+      '教程视频制作',
+      '字幕与配音',
+      '特效制作'
+    ],
+    pastProjects: [
+      {
+        name: '品牌宣传片',
+        description: '为某品牌制作系列宣传片',
+        result: '全网播放量破百万'
+      },
+      {
+        name: '短视频矩阵',
+        description: '搭建并运营短视频内容矩阵',
+        result: '月均产出 30 条爆款'
+      }
+    ],
   },
 
   // 插画设计
@@ -1293,6 +1360,40 @@ export const agents: Agent[] = [
     capabilities: ['投资分析', '行业研究', '估值建模', '尽职调查'],
     pastProjects: generateProjects('投资分析师', '财务分析'),
   },
+  // ★ 明星员工 - 财务分析
+  { 
+    id: 'agent-qian-finance', 
+    name: '钱财务', 
+    avatar: '💰', 
+    category: 'analysis', 
+    subCategory: '财务分析', 
+    description: '资深财务分析师，精通财务报表分析、预算规划、成本控制。帮助团队做出财务决策。', 
+    skills: ['财务分析', 'Excel', '预算规划', '成本控制', '报表制作'], 
+    rating: 4.8, 
+    uses: 850, 
+    trending: true,
+    openclawSkills: [],
+    personality: ['严谨', '数据敏感', '逻辑性强', '风险意识'],
+    capabilities: [
+      '财务报表分析',
+      '预算规划与控制',
+      '成本优化建议',
+      '财务风险评估',
+      '投资回报分析'
+    ],
+    pastProjects: [
+      {
+        name: '年度预算规划',
+        description: '为企业制定年度财务预算',
+        result: '预算偏差率 < 5%'
+      },
+      {
+        name: '成本优化项目',
+        description: '分析并优化企业运营成本',
+        result: '成本降低 15%'
+      }
+    ],
+  },
 
   // 竞品分析
   { 
@@ -1661,6 +1762,40 @@ export const agents: Agent[] = [
     personality: ['用户导向', '转化思维', '数据分析', '流程设计'],
     capabilities: ['新用户引导', '激活策略', '留存优化', '数据分析'],
     pastProjects: generateProjects('新用户运营', '产品运营'),
+  },
+  // ★ 明星员工 - 产品运营
+  { 
+    id: 'agent-sun-product', 
+    name: '孙产品', 
+    avatar: '🎯', 
+    category: 'operations', 
+    subCategory: '产品运营', 
+    description: '资深产品经理，擅长用户洞察、产品规划、需求分析。确保产品方向正确。', 
+    skills: ['用户研究', '需求分析', '产品规划', '数据分析', '原型设计'], 
+    rating: 4.8, 
+    uses: 920, 
+    trending: true,
+    openclawSkills: ['notion:read', 'notion:write'],
+    personality: ['用户导向', '数据敏感', '逻辑清晰', '沟通能力强'],
+    capabilities: [
+      '用户需求洞察',
+      '产品路线规划',
+      '需求文档撰写',
+      '数据分析与决策',
+      '产品迭代优化'
+    ],
+    pastProjects: [
+      {
+        name: '用户增长项目',
+        description: '通过产品优化实现用户增长',
+        result: '月活用户提升 40%'
+      },
+      {
+        name: '新产品从0到1',
+        description: '主导新产品从概念到上线',
+        result: '首月用户破 10 万'
+      }
+    ],
   },
   // ★ 明星员工 - 产品运营
   { 

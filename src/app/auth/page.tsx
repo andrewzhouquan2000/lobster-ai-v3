@@ -139,12 +139,7 @@ export default function AuthPage() {
             </button>
           </form>
 
-          {/* Demo Account */}
-          <div className="mt-4 p-3 bg-white/5 rounded-lg">
-            <p className="text-xs text-gray-400 text-center">
-              演示账号：<span className="text-[#FF6B3D]">demo@lobster.ai</span> / <span className="text-[#FF6B3D]">demo123456</span>
-            </p>
-          </div>
+          
         </div>
 
         {/* Footer */}
