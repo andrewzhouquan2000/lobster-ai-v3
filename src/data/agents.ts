@@ -899,6 +899,40 @@ export const agents: Agent[] = [
     capabilities: ['数据可视化', 'Dashboard设计', '图表设计', '信息架构'],
     pastProjects: generateProjects('数据可视化设计师', 'UI 设计'),
   },
+  // ★ 明星员工 - UI 设计
+  { 
+    id: 'agent-wang-design', 
+    name: '王设计', 
+    avatar: '🎨', 
+    category: 'design', 
+    subCategory: 'UI 设计', 
+    description: '资深 UI 设计师，精通移动端和 Web 界面设计。擅长设计系统搭建和用户体验优化。', 
+    skills: ['UI设计', 'Figma', '设计系统', '用户体验', '原型设计'], 
+    rating: 4.9, 
+    uses: 920, 
+    trending: true,
+    openclawSkills: [],
+    personality: ['审美敏锐', '用户导向', '注重细节', '创意丰富'],
+    capabilities: [
+      '移动端 UI 设计',
+      'Web 界面设计',
+      '设计系统搭建',
+      '用户体验优化',
+      '设计规范输出'
+    ],
+    pastProjects: [
+      {
+        name: '电商 App 重设计',
+        description: '重新设计某电商 App 的核心页面',
+        result: '转化率提升 15%'
+      },
+      {
+        name: '设计系统搭建',
+        description: '为企业搭建完整设计系统',
+        result: '设计效率提升 40%'
+      }
+    ],
+  },
 
   // ========== 营销类 (20个) ==========
   // 内容运营
@@ -1205,6 +1239,40 @@ export const agents: Agent[] = [
     capabilities: ['埋点设计', '行为分析', '数据采集', '指标定义'],
     pastProjects: generateProjects('埋点分析师', '数据分析'),
   },
+  // ★ 明星员工 - 数据分析
+  { 
+    id: 'agent-liu-data', 
+    name: '刘数据', 
+    avatar: '📊', 
+    category: 'analysis', 
+    subCategory: '数据分析', 
+    description: '资深数据分析师，精通数据挖掘、可视化、业务分析。帮助团队用数据驱动决策。', 
+    skills: ['数据分析', 'SQL', 'Python', '可视化', '业务分析'], 
+    rating: 4.8, 
+    uses: 850, 
+    trending: true,
+    openclawSkills: [],
+    personality: ['数据敏感', '逻辑性强', '善于发现', '沟通清晰'],
+    capabilities: [
+      '数据清洗与分析',
+      '业务指标定义',
+      '数据可视化',
+      '分析报告撰写',
+      '数据驱动决策'
+    ],
+    pastProjects: [
+      {
+        name: '用户增长分析',
+        description: '分析用户增长瓶颈并提出优化建议',
+        result: '月活用户提升 25%'
+      },
+      {
+        name: '数据看板搭建',
+        description: '搭建实时数据监控看板',
+        result: '决策效率提升 50%'
+      }
+    ],
+  },
 
   // 财务分析
   { 
@@ -1481,6 +1549,40 @@ export const agents: Agent[] = [
     capabilities: ['直播脚本', '话术设计', '互动策划', '内容规划'],
     pastProjects: generateProjects('直播脚本', '内容创作'),
   },
+  // ★ 明星员工 - 内容创作
+  { 
+    id: 'agent-zhang-content', 
+    name: '张内容', 
+    avatar: '✍️', 
+    category: 'writing', 
+    subCategory: '内容创作', 
+    description: '资深内容策划，擅长品牌内容、营销文案、新媒体运营。帮助品牌讲好故事。', 
+    skills: ['内容策划', '品牌文案', '新媒体运营', '创意写作', '视频脚本'], 
+    rating: 4.8, 
+    uses: 880, 
+    trending: true,
+    openclawSkills: [],
+    personality: ['创意丰富', '文笔流畅', '用户导向', '善于讲故事'],
+    capabilities: [
+      '品牌内容策划',
+      '营销文案撰写',
+      '新媒体内容运营',
+      '视频脚本创作',
+      '内容策略制定'
+    ],
+    pastProjects: [
+      {
+        name: '品牌内容升级',
+        description: '为某品牌重新规划内容策略',
+        result: '内容互动率提升 200%'
+      },
+      {
+        name: '新媒体矩阵搭建',
+        description: '搭建并运营新媒体矩阵',
+        result: '全平台粉丝破 50 万'
+      }
+    ],
+  },
 
   // 专业写作
   { 
@@ -1627,6 +1729,39 @@ export const agents: Agent[] = [
     personality: ['服务意识', '耐心细致', '问题解决', '流程思维'],
     capabilities: ['客服管理', '工单处理', '流程优化', '满意度提升'],
     pastProjects: generateProjects('客服运营', '用户运营'),
+  },
+  // ★ 明星员工 - 用户运营
+  { 
+    id: 'agent-li-service', 
+    name: '李客服', 
+    avatar: '💬', 
+    category: 'operations', 
+    subCategory: '用户运营', 
+    description: '资深客服专家，擅长用户沟通、问题解决、服务流程优化。提升用户满意度。', 
+    skills: ['用户沟通', '问题解决', '服务流程', '投诉处理', '满意度提升'], 
+    rating: 4.7, 
+    uses: 780,
+    openclawSkills: [],
+    personality: ['耐心细致', '沟通能力强', '同理心强', '问题解决能力'],
+    capabilities: [
+      '用户问题解答',
+      '投诉处理与转化',
+      '服务流程优化',
+      '用户满意度提升',
+      '客服团队培训'
+    ],
+    pastProjects: [
+      {
+        name: '客服体系搭建',
+        description: '从 0 到 1 搭建客服体系',
+        result: '用户满意度提升 30%'
+      },
+      {
+        name: '投诉处理优化',
+        description: '优化投诉处理流程',
+        result: '投诉转化率下降 40%'
+      }
+    ],
   },
 
   // 活动运营
