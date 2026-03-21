@@ -262,25 +262,64 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { projectId, message, messages } = body;
 
+    console.log('[Chat API] Received request:', { 
+      projectId, 
+      hasMessage: !!message, 
+      messagesCount: messages?.length,
+      userId: userId || 'anonymous'
+    });
+
     // 如果有 projectId，执行完整的 Agent 协作流程
     if (projectId) {
       const project = getProjectById(projectId);
-      const projectName = project?.name || '新项目';
+      if (!project) {
+        console.error('[Chat API] Project not found:', projectId);
+        return NextResponse.json({ 
+          success: false, 
+          error: '项目不存在' 
+        }, { status: 404 });
+      }
+      
+      const projectName = project.name || '新项目';
 
       // 确保项目状态已初始化
       let state = getProjectStateByProjectId(projectId);
       if (!state) {
+        console.log('[Chat API] Initializing project state for:', projectId);
         initProjectState(projectId);
         state = getProjectStateByProjectId(projectId);
       }
 
       const userMessage = message || messages?.[messages.length - 1]?.content || '';
       
-      // 保存用户消息
-      createMessage(projectId, 'user', userMessage, userId || undefined, { source: 'user' });
+      console.log('[Chat API] User message:', userMessage.slice(0, 100));
+      
+      // 保存用户消息 - 使用 null 作为匿名用户的 user_id
+      try {
+        createMessage(projectId, 'user', userMessage, userId, { source: 'user' });
+      } catch (msgError) {
+        console.error('[Chat API] Failed to save user message:', msgError);
+        // 继续执行，不要因为消息保存失败而中断
+      }
 
       // ========== 1. CEO AI 分析需求 ==========
-      const analysis = await analyzeRequirement(userMessage);
+      let analysis;
+      try {
+        analysis = await analyzeRequirement(userMessage);
+        console.log('[Chat API] Analysis result:', { 
+          projectType: analysis.projectType, 
+          needsMoreInfo: analysis.needsMoreInfo 
+        });
+      } catch (analyzeError) {
+        console.error('[Chat API] Analyze requirement error:', analyzeError);
+        // 使用默认分析结果
+        analysis = {
+          needsMoreInfo: false,
+          projectType: 'default',
+          projectSummary: userMessage.slice(0, 100),
+          response: '好的，我来帮你实现！',
+        };
+      }
       
       // 如果需求不清晰，CEO AI 追问
       if (analysis.needsMoreInfo) {

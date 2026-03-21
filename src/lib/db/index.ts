@@ -12,6 +12,10 @@ if (!fs.existsSync(dataDir)) {
 
 const db = new Database(DB_PATH);
 
+// Enable foreign key constraints
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
+
 // Initialize database schema
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (

@@ -147,16 +147,20 @@ export function createMessage(
   projectId: string,
   role: 'user' | 'assistant' | 'system',
   content: string,
-  userId?: string,
+  userId?: string | null,
   metadata?: any
 ): Message {
   const messageId = randomUUID();
   const now = new Date().toISOString();
 
+  // 确保 userId 为 null 而不是 undefined，以符合外键约束
+  // 外键约束允许 NULL 值，但不允许无效的非 NULL 值
+  const effectiveUserId = userId || null;
+
   db.prepare(`
     INSERT INTO messages (id, project_id, user_id, role, content, metadata, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(messageId, projectId, userId || null, role, content, JSON.stringify(metadata || {}), now);
+  `).run(messageId, projectId, effectiveUserId, role, content, JSON.stringify(metadata || {}), now);
 
   // Update project updated_at
   db.prepare('UPDATE projects SET updated_at = ? WHERE id = ?').run(now, projectId);
