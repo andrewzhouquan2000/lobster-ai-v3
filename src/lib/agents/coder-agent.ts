@@ -12,8 +12,10 @@ import { createMessage, getMessagesByProject } from '@/lib/db/projects';
 import fs from 'fs';
 import path from 'path';
 
-const GATEWAY_URL = process.env.NEXT_PUBLIC_OPENCLAW_GATEWAY_URL || 'http://127.0.0.1:18789';
-const GATEWAY_TOKEN = process.env.NEXT_PUBLIC_OPENCLAW_GATEWAY_TOKEN || '';
+// 直接 LLM API 配置（阿里云百炼 Coding Plan）
+const LLM_API_URL = process.env.LLM_API_URL || 'https://coding.dashscope.aliyuncs.com/v1';
+const LLM_API_KEY = process.env.LLM_API_KEY || '';
+const LLM_MODEL = process.env.LLM_MODEL || 'glm-5';
 const PROJECTS_DIR = process.env.PROJECTS_DIR || path.join(process.cwd(), 'generated-projects');
 
 // Coder Agent 系统提示
@@ -162,18 +164,18 @@ ${context.existingFiles.join('\n')}
   }
 
   /**
-   * 调用 LLM
+   * 调用 LLM（直接调用阿里云百炼 Coding Plan API）
    */
   private async callLlm(prompt: string): Promise<string> {
     try {
-      const response = await fetch(`${GATEWAY_URL}/v1/chat/completions`, {
+      const response = await fetch(`${LLM_API_URL}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GATEWAY_TOKEN}`,
+          'Authorization': `Bearer ${LLM_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'glm-5',
+          model: LLM_MODEL,
           messages: [
             { role: 'system', content: CODER_SYSTEM_PROMPT },
             { role: 'user', content: prompt },
