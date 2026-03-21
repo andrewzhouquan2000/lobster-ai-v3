@@ -8,6 +8,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import BottomNav from '@/components/BottomNav';
 import UserMenu from '@/components/UserMenu';
 
+// 项目状态接口
+interface ProjectState {
+  phase: string;
+  progress: number;
+  deploy_url: string | null;
+}
+
 interface Project {
   id: string;
   name: string;
@@ -16,6 +23,7 @@ interface Project {
   openclaw_session_id?: string | null;
   created_at: string;
   updated_at: string;
+  state?: ProjectState; // 项目状态（包含进度）
 }
 
 interface User {
@@ -48,10 +56,12 @@ export default function DashboardClient({ user, initialProjects }: DashboardClie
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [showNewProject, setShowNewProject] = useState(false);
   const [projectName, setProjectName] = useState('');
+  const [projectDescription, setProjectDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateProject = async () => {
     const name = projectName.trim() || '新项目';
+    const description = projectDescription.trim() || undefined;
     setIsCreating(true);
 
     try {
@@ -59,7 +69,7 @@ export default function DashboardClient({ user, initialProjects }: DashboardClie
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, description }),
       });
 
       const data = await res.json();
@@ -141,24 +151,58 @@ export default function DashboardClient({ user, initialProjects }: DashboardClie
           <span className="text-xs text-[#FF6B3D]">共 {projects.length} 个</span>
         </div>
         <div className="space-y-3">
-          {projects.map((project) => (
-            <Link key={project.id} href={`/chat?project=${project.id}&name=${encodeURIComponent(project.name)}`}>
-              <Card className="border border-[#FF6B3D]/30 bg-gradient-to-br from-orange-50/50 to-white rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-[#1A1A2E] text-sm">{project.name}</h3>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border bg-orange-100 text-orange-600 border-orange-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
-                      进行中
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {new Date(project.updated_at).toLocaleDateString('zh-CN')}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+          {projects.map((project) => {
+            // 获取项目状态和进度
+            const progress = project.state?.progress || 0;
+            const phase = project.state?.phase || 'init';
+            
+            // 根据阶段显示不同状态
+            const getStatusBadge = () => {
+              if (phase === 'completed') {
+                return { text: '已完成', color: 'bg-green-100 text-green-600 border-green-200', dot: 'bg-green-400' };
+              }
+              if (progress > 0) {
+                return { text: `${progress}%`, color: 'bg-orange-100 text-orange-600 border-orange-200', dot: 'bg-orange-400' };
+              }
+              return { text: '进行中', color: 'bg-orange-100 text-orange-600 border-orange-200', dot: 'bg-orange-400' };
+            };
+            
+            const statusBadge = getStatusBadge();
+            
+            return (
+              <Link key={project.id} href={`/chat?project=${project.id}&name=${encodeURIComponent(project.name)}`}>
+                <Card className="border border-[#FF6B3D]/30 bg-gradient-to-br from-orange-50/50 to-white rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium text-[#1A1A2E] text-sm">{project.name}</h3>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${statusBadge.color}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${statusBadge.dot}`} />
+                        {statusBadge.text}
+                      </span>
+                    </div>
+                    {/* 显示项目描述 */}
+                    {project.description && (
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-1">{project.description}</p>
+                    )}
+                    {/* 显示进度条 */}
+                    {progress > 0 && progress < 100 && (
+                      <div className="mt-2">
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-[#FF6B3D] to-[#FF8F6B] rounded-full transition-all duration-300" 
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      {new Date(project.updated_at).toLocaleDateString('zh-CN')}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
           {projects.length === 0 && (
             <div className="text-center py-8 text-gray-400">
               <p className="text-3xl mb-2">📁</p>
@@ -228,18 +272,32 @@ export default function DashboardClient({ user, initialProjects }: DashboardClie
                 className="w-full h-10 text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 focus:outline-none focus:border-[#FF6B3D] focus:ring-1 focus:ring-[#FF6B3D]"
               />
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">项目描述 <span className="text-gray-400 font-normal">(可选)</span></label>
+              <textarea
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                placeholder="描述你的项目需求，例如：一个24点游戏应用，支持单人模式和排行榜功能..."
+                rows={3}
+                className="w-full text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-[#FF6B3D] focus:ring-1 focus:ring-[#FF6B3D] resize-none"
+              />
+            </div>
             <div className="flex gap-3">
               <button
-                onClick={() => setShowNewProject(false)}
+                onClick={() => {
+                  setShowNewProject(false);
+                  setProjectDescription('');
+                }}
                 className="flex-1 h-10 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 取消
               </button>
               <button
                 onClick={handleCreateProject}
-                className="flex-1 h-10 text-sm text-white bg-gradient-to-r from-[#FF6B3D] to-[#FF8F6B] rounded-lg hover:opacity-90 transition-opacity font-medium"
+                disabled={isCreating}
+                className="flex-1 h-10 text-sm text-white bg-gradient-to-r from-[#FF6B3D] to-[#FF8F6B] rounded-lg hover:opacity-90 transition-opacity font-medium disabled:opacity-50"
               >
-                创建并开始
+                {isCreating ? '创建中...' : '创建并开始'}
               </button>
             </div>
           </div>
