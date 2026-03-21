@@ -173,7 +173,7 @@ ${context.existingFiles.join('\n')}
           'Authorization': `Bearer ${GATEWAY_TOKEN}`,
         },
         body: JSON.stringify({
-          model: 'qwen-plus',
+          model: 'glm-5',
           messages: [
             { role: 'system', content: CODER_SYSTEM_PROMPT },
             { role: 'user', content: prompt },

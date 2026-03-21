@@ -74,7 +74,7 @@ async function callLlm(messages: { role: string; content: string }[]): Promise<s
         'Authorization': `Bearer ${GATEWAY_TOKEN}`,
       },
       body: JSON.stringify({
-        model: 'qwen-plus',
+        model: 'glm-5',
         messages,
         stream: false,
       }),
