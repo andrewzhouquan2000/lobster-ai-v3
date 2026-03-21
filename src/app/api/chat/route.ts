@@ -164,10 +164,16 @@ async function generateCeoAnalysisMessage(
     return agent ? `${agent.name}（${a.role}）` : a.id;
   }).join('、');
 
+  const typeLabel = projectType === 'game' ? '游戏应用' 
+    : projectType === 'web' ? 'Web网站' 
+    : projectType === 'mobile' ? '移动应用' 
+    : projectType === 'data' ? '数据分析' 
+    : '应用';
+
   return `收到！我来组建团队并开始开发。
 
 ## 📋 需求分析
-- **项目类型**：${projectType === 'game' ? '游戏应用' : projectType === 'web' ? 'Web网站' : projectType === 'mobile' ? '移动应用' : '应用'}
+- **项目类型**：${typeLabel}
 - **需求摘要**：${projectSummary}
 
 ## 👥 团队配置
@@ -175,32 +181,51 @@ async function generateCeoAnalysisMessage(
 ${agentNames}
 
 ## 🚀 开始执行
-正在将任务分配给 Coder Agent...`;
+正在启动开发流程，Coder Agent 将实时报告进度...`;
 }
 
 /**
- * 生成 Coder Agent 开发进度消息
+ * 生成 Coder Agent 开发进度消息（支持多阶段）
  */
 async function generateCoderProgressMessage(
   taskDescription: string,
   progress: number,
-  projectName: string
+  projectName: string,
+  stage?: string
 ): Promise<string> {
-  return `收到任务！正在开发中...
+  const stages = [
+    { name: '需求分析', threshold: 10 },
+    { name: '架构设计', threshold: 25 },
+    { name: '核心功能开发', threshold: 50 },
+    { name: 'UI 界面实现', threshold: 70 },
+    { name: '集成测试', threshold: 85 },
+    { name: '优化部署', threshold: 95 },
+  ];
+
+  const currentStage = stages.find(s => progress < s.threshold) || stages[stages.length - 1];
+  const completedStages = stages.filter(s => progress >= s.threshold);
+
+  let progressEmoji = '🔄';
+  if (progress >= 90) progressEmoji = '🎉';
+  else if (progress >= 70) progressEmoji = '🚀';
+  else if (progress >= 50) progressEmoji = '⚡';
+  else if (progress >= 25) progressEmoji = '🔧';
+
+  const stageList = stages.map(s => {
+    const isCompleted = progress >= s.threshold;
+    const isCurrent = !isCompleted && (stages.indexOf(s) === completedStages.length);
+    return `- ${s.name} ${isCompleted ? '✅' : isCurrent ? '🔄 进行中' : '⏳'}`;
+  }).join('\n');
+
+  return `${progressEmoji} **开发进度：${progress}%**
 
 ## 🛠️ 当前任务
 ${taskDescription}
 
-## 📊 开发进度
-- 需求分析 ✅
-- 架构设计 ✅
-- 核心功能开发 ${progress >= 50 ? '✅' : '🔄'}
-- UI 界面实现 ${progress >= 70 ? '✅' : '🔄'}
-- 测试调试 ${progress >= 90 ? '✅' : '⏳'}
+## 📊 进度详情
+${stageList}
 
-**当前进度：${progress}%**
-
-${progress >= 80 ? `\n🎉 核心功能已完成，正在进行最后优化...` : ''}`;
+${progress >= 80 ? `\n🎉 核心功能已完成，正在进行最后优化...` : progress >= 50 ? `\n⚡ 核心功能开发中，即将完成...` : ''}`;
 }
 
 /**
@@ -215,9 +240,10 @@ function generateCoderCompleteMessage(projectId: string, projectName: string): s
 **项目名称**：${projectName}
 
 ### 📦 交付内容
-- 完整的前端应用代码
-- 响应式 UI 设计
-- 核心功能实现
+- ✅ 完整的前端应用代码
+- ✅ 响应式 UI 设计
+- ✅ 核心功能实现
+- ✅ 测试验证通过
 
 ### 🔗 项目预览
 [点击查看预览](${previewUrl})
@@ -229,7 +255,7 @@ Coder Agent 任务已完成，项目已准备就绪！`;
 /**
  * 生成 CEO AI 交付消息
  */
-function generateCeoDeliveryMessage(projectId: string, projectName: string): string {
+function generateCeoDeliveryMessage(projectId: string, projectName: string, description?: string): string {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const previewUrl = `${baseUrl}/preview/${projectId}`;
 
@@ -237,9 +263,17 @@ function generateCeoDeliveryMessage(projectId: string, projectName: string): str
 
 **${projectName}** 已成功交付！
 
+${description ? `### 📝 项目描述\n${description}\n` : ''}
+
 ### 👥 团队贡献
 - ✅ CEO AI：需求分析与项目协调
 - ✅ Coder Agent：核心功能开发
+
+### 📦 交付清单
+- ✅ 完整的应用代码
+- ✅ 响应式 UI 设计
+- ✅ 核心功能实现
+- ✅ 测试验证通过
 
 ### 🔗 交付链接
 [点击查看项目预览](${previewUrl})
